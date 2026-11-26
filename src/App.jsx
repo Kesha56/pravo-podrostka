@@ -27,17 +27,287 @@ import {
   BookOpen,
   ChevronDown,
   Zap,
-  Upload,
   ExternalLink,
   Mail,
   ShieldCheck,
-  Trash2
+  Trash2,
+  Bell
 } from 'lucide-react';
+
+const GLOBAL_STYLES = `
+  /* Пружинная анимация кнопок в стиле Apple / Reachable */
+  .pp-btn {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.36s cubic-bezier(0.3, 1.6, 0.5, 1),
+      box-shadow 0.3s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
+    will-change: transform;
+  }
+  .pp-btn::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      115deg,
+      transparent 20%,
+      rgba(255, 255, 255, 0.32) 48%,
+      transparent 76%
+    );
+    transform: translateX(-130%);
+    transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+  }
+  .pp-btn:hover {
+    transform: translateY(-2px) scale(1.015);
+    box-shadow: 0 12px 24px -10px rgba(0, 113, 227, 0.35);
+  }
+  .pp-btn:hover::after {
+    transform: translateX(130%);
+  }
+  .pp-btn:active {
+    transform: translateY(0px) scale(0.97);
+    transition-duration: 0.1s;
+  }
+
+  /* Анимация логотипа: пружинный подъём щита + прорисовка галочки */
+  .brand-logo-btn {
+    transition: transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  .brand-logo-btn:active {
+    transform: scale(0.96);
+  }
+  .brand-shield-svg {
+    transition: transform 0.42s cubic-bezier(0.3, 1.6, 0.5, 1), filter 0.3s ease;
+    transform-origin: center;
+  }
+  .brand-logo-btn:hover .brand-shield-svg {
+    transform: translateY(-2px) scale(1.09) rotate(-3deg);
+    filter: drop-shadow(0 6px 12px rgba(0, 113, 227, 0.32));
+  }
+  .brand-check-path {
+    stroke-dasharray: 28;
+    stroke-dashoffset: 0;
+  }
+  .brand-logo-btn:hover .brand-check-path {
+    animation: pp-check-draw 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  @keyframes pp-check-draw {
+    0% { stroke-dashoffset: 28; }
+    100% { stroke-dashoffset: 0; }
+  }
+
+  /* Сцена радара ловушек работодателей */
+  .traps-stage {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, #ffffff 0%, #f3f8ff 60%, #eaf3ff 100%);
+  }
+  .traps-stage .crowd-layer {
+    position: relative;
+    width: 100%;
+    height: 290px;
+    pointer-events: none;
+  }
+  .traps-stage .pw {
+    position: absolute;
+    left: 0;
+    pointer-events: none;
+  }
+  .traps-stage .pe {
+    width: 100%;
+    height: 100%;
+    will-change: transform;
+    transform-origin: 50% 88%;
+  }
+  .traps-stage .hp {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.45s cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  .traps-stage .pw.hop .hp {
+    transform: translateY(-18px) scale(1.05);
+  }
+  .traps-stage .pw img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    transition: filter 0.4s ease;
+  }
+  .traps-stage .ok-badge {
+    position: absolute;
+    left: 62%;
+    top: 8%;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: #0071e3;
+    box-shadow: 0 0 0 2.5px #fff, 0 6px 12px -4px rgba(0, 113, 227, 0.6);
+    display: grid;
+    place-items: center;
+    transform: scale(0);
+    transition: transform 0.4s cubic-bezier(0.3, 1.7, 0.5, 1);
+  }
+  .traps-stage .pw.done .ok-badge {
+    transform: scale(1);
+  }
+  .traps-stage .tip-wrap {
+    position: absolute;
+    z-index: 12;
+    left: 0;
+    top: 0;
+    pointer-events: none;
+    will-change: transform;
+  }
+  .traps-stage .tbox {
+    position: relative;
+    transform: translate(-50%, -100%) scale(0);
+    transform-origin: 50% 100%;
+    opacity: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    max-width: 320px;
+    padding: 6px 12px 6px 7px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 14px 32px -12px rgba(15, 23, 42, 0.25), 0 2px 6px rgba(15, 23, 42, 0.06);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1d1d1f;
+    white-space: nowrap;
+    transition: transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1), opacity 0.22s ease;
+  }
+  .traps-stage .tbox.show {
+    transform: translate(-50%, -100%) scale(1);
+    opacity: 1;
+  }
+  .traps-stage .tbox.flip {
+    transform: translate(-50%, -100%) scale(0.95) rotateX(85deg);
+    opacity: 0.4;
+  }
+  .traps-stage .tg {
+    display: inline-flex;
+    align-items: center;
+    height: 21px;
+    padding: 0 7px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .traps-stage .tg.warn {
+    color: #c2410c;
+    background: #ffedd5;
+  }
+  .traps-stage .tg.danger {
+    color: #b91c1c;
+    background: #fee2e2;
+  }
+  .traps-stage .tg.ok {
+    color: #15803d;
+    background: #dcfce7;
+  }
+  .traps-stage .cbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 30px;
+    padding: 0 12px 0 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(0, 113, 227, 0.16);
+    box-shadow: 0 10px 24px -10px rgba(0, 113, 227, 0.3);
+    font-size: 12px;
+    color: #1d1d1f;
+    white-space: nowrap;
+    transform: scale(0.85);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.3, 1.6, 0.5, 1), opacity 0.2s ease;
+  }
+  .traps-stage .cbox.show {
+    transform: scale(1);
+    opacity: 1;
+  }
+  .traps-stage .cbox .lab {
+    height: 20px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: rgba(0, 113, 227, 0.1);
+    color: #0071e3;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 20px;
+  }
+  .traps-stage .btile {
+    transition: transform 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  .traps-stage .btile.pulse {
+    transform: scale(1.13);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pp-btn, .pp-btn::after, .brand-shield-svg, .brand-check-path {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+`;
+
+/**
+ * Векторный логотип «ПравоПодростка 14–17» (щит с галочкой + 14–17 + подпись)
+ * с пружинной анимацией щита и прорисовкой галочки при наведении.
+ */
+function BrandLogo({ compact = false }) {
+  return (
+    <div className="inline-flex items-center gap-2.5 select-none">
+      <svg
+        viewBox="0 0 44 48"
+        className={`brand-shield-svg ${compact ? 'w-7 h-8 shrink-0' : 'w-8 h-9 shrink-0'}`}
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <path
+          d="M22 3L6 9.5V22.5C6 33.4 12.8 42.1 22 45C31.2 42.1 38 33.4 38 22.5V9.5L22 3Z"
+          stroke="#0071E3"
+          strokeWidth="3.2"
+          strokeLinejoin="round"
+        />
+        <path
+          className="brand-check-path"
+          d="M15 24.5L20 29.5L30.5 18.5"
+          stroke="#0071E3"
+          strokeWidth="3.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <div className="flex flex-col leading-none">
+        <span
+          className={`font-extrabold tracking-tight text-[#0071E3] transition-colors group-hover:text-[#0077ED] ${
+            compact ? 'text-[17px]' : 'text-[20px]'
+          }`}
+        >
+          14–17
+        </span>
+        <span
+          className={`font-bold tracking-[0.04em] text-[#0071E3] uppercase mt-0.5 transition-colors group-hover:text-[#0077ED] ${
+            compact ? 'text-[8.5px]' : 'text-[9.5px]'
+          }`}
+        >
+          ПРАВОПОДРОСТКА
+        </span>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Полноэкранный интерактивный фон GradientASCII в светлой эстетике Apple.
- * Оптимизирован: ставит анимацию на паузу при сворачивании вкладки и не
- * пересоздает буферы при повторных рендерах родителя.
  */
 function GradientASCII({
   colors = ['#0071E3', '#0284C7', '#38BDF8', '#7DD3FC'],
@@ -45,8 +315,7 @@ function GradientASCII({
   characters = ' =+xX0S8#@',
   cellSize = 18,
   density = 0.8,
-  glyphOpacity = 0.52,
-  glow = 0.2,
+  glyphOpacity = 0.5,
   flicker = 0.2,
   softness = 0.5,
   scale = 1,
@@ -71,9 +340,8 @@ function GradientASCII({
 
     let animId = 0;
     let isPageVisible = !document.hidden;
-
-    let width = window.innerWidth;
-    let height = window.innerHeight;
+    let width = window.innerWidth || 0;
+    let height = window.innerHeight || 0;
     let cols = 0;
     let rows = 0;
     let dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -89,14 +357,15 @@ function GradientASCII({
     });
 
     const sampleGradient = (t) => {
-      const clamped = Math.max(0, Math.min(1, t));
-      if (parsedColors.length === 0) return { r: 0, g: 113, b: 227 };
+      if (!parsedColors.length) return { r: 0, g: 113, b: 227 };
       if (parsedColors.length === 1) return parsedColors[0];
-      const scaled = clamped * (parsedColors.length - 1);
-      const idx = Math.floor(scaled);
+      const safeT = Number.isFinite(t) ? Math.max(0, Math.min(1, t)) : 0;
+      const scaled = safeT * (parsedColors.length - 1);
+      const idx = Math.max(0, Math.min(parsedColors.length - 1, Math.floor(scaled)));
+      const nextIdx = Math.min(parsedColors.length - 1, idx + 1);
       const frac = scaled - idx;
-      const c1 = parsedColors[idx];
-      const c2 = parsedColors[Math.min(parsedColors.length - 1, idx + 1)];
+      const c1 = parsedColors[idx] || parsedColors[0];
+      const c2 = parsedColors[nextIdx] || c1;
       return {
         r: Math.round(c1.r + (c2.r - c1.r) * frac),
         g: Math.round(c1.g + (c2.g - c1.g) * frac),
@@ -109,8 +378,9 @@ function GradientASCII({
     const startTime = performance.now();
 
     const resize = () => {
-      width = window.innerWidth;
-      height = window.innerHeight;
+      width = window.innerWidth || 0;
+      height = window.innerHeight || 0;
+      if (width <= 0 || height <= 0) return;
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
@@ -131,19 +401,13 @@ function GradientASCII({
 
     const handleClick = (e) => {
       if (clickEffect !== 'wave') return;
-      waves.push({
-        x: e.clientX,
-        y: e.clientY,
-        birth: performance.now()
-      });
+      waves.push({ x: e.clientX, y: e.clientY, birth: performance.now() });
       if (waves.length > 5) waves.shift();
     };
 
     const handleVisibility = () => {
       isPageVisible = !document.hidden;
-      if (isPageVisible && !animId) {
-        animId = requestAnimationFrame(render);
-      }
+      if (isPageVisible && !animId) animId = requestAnimationFrame(render);
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
@@ -158,6 +422,10 @@ function GradientASCII({
     const render = (now) => {
       if (!isPageVisible) {
         animId = 0;
+        return;
+      }
+      if (width <= 0 || height <= 0) {
+        animId = requestAnimationFrame(render);
         return;
       }
 
@@ -237,9 +505,7 @@ function GradientASCII({
           let mouseBoost = 0;
           if (mouse.active && mouseInteraction) {
             const dm = Math.hypot(px - mouse.x, py - mouse.y);
-            if (dm < scramblePx) {
-              mouseBoost = 1 - dm / scramblePx;
-            }
+            if (dm < scramblePx) mouseBoost = 1 - dm / scramblePx;
           }
 
           const flickerDelta =
@@ -248,19 +514,18 @@ function GradientASCII({
               : 0;
           const grainNoise = (hash2D(c + Math.floor(elapsed * 8), r) - 0.5) * grain;
 
-          const intensity = Math.max(
-            0,
-            Math.min(1, fieldVal + waveBoost * 0.7 + mouseBoost * 0.5 - flickerDelta + grainNoise)
-          );
-
+          const rawIntensity =
+            fieldVal + waveBoost * 0.7 + mouseBoost * 0.5 - flickerDelta + grainNoise;
+          if (!Number.isFinite(rawIntensity)) continue;
+          const intensity = Math.max(0, Math.min(1, rawIntensity));
           if (intensity < 0.06) continue;
 
           let charIdx = Math.floor(intensity * (charCount - 1));
           if (mouseBoost > 0.15 || waveBoost > 0.2) {
-            const scrambleShift = Math.floor(
-              hash2D(c + Math.floor(now * 0.02), r) * (charCount - 1)
+            charIdx = Math.max(
+              1,
+              Math.floor(hash2D(c + Math.floor(now * 0.02), r) * (charCount - 1))
             );
-            charIdx = Math.max(1, scrambleShift);
           }
 
           const ch = characters[charIdx] || '+';
@@ -268,7 +533,6 @@ function GradientASCII({
 
           const col = sampleGradient(Math.min(1, intensity * 1.1));
           const alpha = Math.min(0.85, intensity * glyphOpacity * introFactor);
-
           ctx.fillStyle = `rgba(${col.r}, ${col.g}, ${col.b}, ${alpha.toFixed(3)})`;
           ctx.fillText(ch, px, py);
         }
@@ -293,7 +557,6 @@ function GradientASCII({
     cellSize,
     density,
     glyphOpacity,
-    glow,
     flicker,
     softness,
     scale,
@@ -318,8 +581,8 @@ function GradientASCII({
 }
 
 /**
- * Интерактивный компонент TechText в чертежной эстетике Apple WWDC.
- * Оптимизирован через IntersectionObserver: рендерится только в зоне видимости.
+ * Интерактивный заголовок TechText (чертежная эстетика Apple WWDC).
+ * Дефис (– / -) рисуется как идеально ровная геометрическая планка строго по вертикальному центру.
  */
 function TechText({
   text = 'ПРАВО 14–17',
@@ -366,25 +629,28 @@ function TechText({
     let isInViewport = true;
 
     const buildLayout = () => {
-      width = container.clientWidth || 960;
-      height = container.clientHeight || 280;
+      width = Math.max(240, container.clientWidth || 960);
+      height = Math.max(120, container.clientHeight || 280);
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const charFactor = Math.max(3.4, text.length * 0.64);
+      const charFactor = Math.max(3.4, text.length * 0.65);
       const responsiveSize = Math.min(fontSize, Math.max(36, Math.floor(width / charFactor)));
       ctx.font = `${fontWeight} ${responsiveSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
 
       const chars = Array.from(text);
       const spacingPx = responsiveSize * letterSpacing;
-      const widths = chars.map((ch) => ctx.measureText(ch).width);
+      const widths = chars.map((ch) => {
+        if (ch === '–' || ch === '-') return responsiveSize * 0.56;
+        return ctx.measureText(ch).width;
+      });
       const totalWidth =
         widths.reduce((acc, w) => acc + w, 0) + spacingPx * Math.max(0, chars.length - 1);
 
       let cursorX = (width - totalWidth) / 2;
-      const baseY = height * 0.58;
+      const baseY = height * 0.62;
 
       letters = chars.map((ch, idx) => {
         const w = widths[idx];
@@ -392,8 +658,9 @@ function TechText({
         cursorX += w + spacingPx;
         return {
           ch,
+          isDash: ch === '–' || ch === '-',
           width: w,
-          height: responsiveSize * 0.78,
+          height: responsiveSize * 0.74,
           fontSize: responsiveSize,
           homeX: centerX,
           homeY: baseY,
@@ -419,12 +686,10 @@ function TechText({
 
     const getLocalCoords = (e) => {
       const rect = canvas.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      return {
-        x: clientX - rect.left,
-        y: clientY - rect.top
-      };
+      const touch = e.touches && e.touches[0];
+      const clientX = touch ? touch.clientX : e.clientX;
+      const clientY = touch ? touch.clientY : e.clientY;
+      return { x: clientX - rect.left, y: clientY - rect.top };
     };
 
     const onPointerDown = (e) => {
@@ -438,7 +703,7 @@ function TechText({
         if (l.ch === ' ') continue;
         if (
           Math.abs(pt.x - l.x) <= l.width * 0.58 &&
-          Math.abs(pt.y - (l.y - l.height * 0.35)) <= l.height * 0.65
+          Math.abs(pt.y - (l.y - l.height * 0.4)) <= l.height * 0.65
         ) {
           if (draggable) {
             draggedIndex = i;
@@ -459,7 +724,6 @@ function TechText({
       pointer.x = pt.x;
       pointer.y = pt.y;
       pointer.active = true;
-
       if (draggedIndex >= 0 && letters[draggedIndex]) {
         letters[draggedIndex].x = pt.x - dragOffset.x;
         letters[draggedIndex].y = pt.y - dragOffset.y;
@@ -471,7 +735,6 @@ function TechText({
     const onPointerUp = () => {
       draggedIndex = -1;
     };
-
     const onPointerLeave = () => {
       pointer.active = false;
       draggedIndex = -1;
@@ -487,15 +750,29 @@ function TechText({
 
     let lastNow = performance.now();
 
+    const drawDashShape = (l, doFill, doStroke) => {
+      const barW = l.fontSize * 0.36;
+      const barH = Math.max(7, l.fontSize * 0.115);
+      const centerY = -l.height * 0.46;
+      const rx = barH * 0.25;
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(-barW / 2, centerY - barH / 2, barW, barH, rx);
+      } else {
+        ctx.rect(-barW / 2, centerY - barH / 2, barW, barH);
+      }
+      if (doFill) ctx.fill();
+      if (doStroke) ctx.stroke();
+    };
+
     const animate = (now) => {
       if (!isInViewport || document.hidden) {
         animId = 0;
         return;
       }
 
-      const dt = Math.min(0.033, (now - lastNow) / 1000) * speed;
+      const dt = Math.min(0.033, Math.max(0, (now - lastNow) / 1000)) * speed;
       lastNow = now;
-
       ctx.clearRect(0, 0, width, height);
 
       particles.forEach((p, idx) => {
@@ -520,10 +797,9 @@ function TechText({
         if (idx !== draggedIndex) {
           let targetX = l.homeX;
           let targetY = l.homeY;
-
           if (pointer.active) {
             const dx = l.homeX - pointer.x;
-            const dy = l.homeY - l.height * 0.3 - pointer.y;
+            const dy = l.homeY - l.height * 0.35 - pointer.y;
             const dist = Math.hypot(dx, dy);
             if (dist < reach && dist > 1) {
               const force = Math.pow(1 - dist / reach, 2) * 22;
@@ -531,7 +807,6 @@ function TechText({
               targetY += (dy / dist) * force;
             }
           }
-
           const ax = (targetX - l.x) * springK - l.vx * damping;
           const ay = (targetY - l.y) * springK - l.vy * damping;
           l.vx += ax * dt;
@@ -547,7 +822,7 @@ function TechText({
         const isHovered =
           pointer.active &&
           Math.abs(pointer.x - l.x) <= l.width * 0.56 &&
-          Math.abs(pointer.y - (l.y - l.height * 0.35)) <= l.height * 0.62;
+          Math.abs(pointer.y - (l.y - l.height * 0.4)) <= l.height * 0.62;
 
         ctx.save();
         ctx.translate(l.x, l.y);
@@ -557,17 +832,19 @@ function TechText({
         ctx.textAlign = 'center';
         ctx.textBaseline = 'alphabetic';
 
-        ctx.fillStyle = isHovered
-          ? 'rgba(0, 113, 227, 0.14)'
-          : 'rgba(255, 255, 255, 0.72)';
-        ctx.fillText(l.ch, 0, 0);
-
+        ctx.fillStyle = isHovered ? 'rgba(0, 113, 227, 0.14)' : 'rgba(255, 255, 255, 0.8)';
         ctx.setLineDash([dashLength, dashGap]);
         ctx.lineWidth = isHovered ? strokeWidth + 0.7 : strokeWidth;
         ctx.strokeStyle = isHovered ? accentColor : color;
         ctx.shadowColor = isHovered ? 'rgba(0, 113, 227, 0.25)' : 'rgba(15, 23, 42, 0.08)';
         ctx.shadowBlur = isHovered ? 12 : 6;
-        ctx.strokeText(l.ch, 0, 0);
+
+        if (l.isDash) {
+          drawDashShape(l, true, true);
+        } else {
+          ctx.fillText(l.ch, 0, 0);
+          ctx.strokeText(l.ch, 0, 0);
+        }
 
         if (sweep) {
           const normX = l.x / Math.max(1, width);
@@ -576,7 +853,8 @@ function TechText({
             const alpha = (1 - distSweep / 0.14) * 0.85;
             ctx.setLineDash([]);
             ctx.strokeStyle = `rgba(0, 113, 227, ${alpha.toFixed(3)})`;
-            ctx.strokeText(l.ch, 0, 0);
+            if (l.isDash) drawDashShape(l, false, true);
+            else ctx.strokeText(l.ch, 0, 0);
           }
         }
 
@@ -584,10 +862,9 @@ function TechText({
           ctx.setLineDash([3, 3]);
           ctx.lineWidth = 1;
           ctx.strokeStyle = 'rgba(0, 113, 227, 0.65)';
-          const boxW = l.width + 14;
+          const boxW = l.width + 12;
           const boxH = l.height + 16;
           ctx.strokeRect(-boxW / 2, -l.height - 4, boxW, boxH);
-
           if (labels) {
             ctx.setLineDash([]);
             ctx.font = '600 10px ui-monospace, monospace';
@@ -602,23 +879,29 @@ function TechText({
       animId = requestAnimationFrame(animate);
     };
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        isInViewport = entries[0]?.isIntersecting ?? true;
-        if (isInViewport && !animId) {
-          lastNow = performance.now();
-          animId = requestAnimationFrame(animate);
-        }
-      },
-      { threshold: 0.05 }
-    );
-    observer.observe(container);
+    let observer = null;
+    if (typeof IntersectionObserver !== 'undefined') {
+      observer = new IntersectionObserver(
+        (entries) => {
+          isInViewport =
+            entries[0] && typeof entries[0].isIntersecting === 'boolean'
+              ? entries[0].isIntersecting
+              : true;
+          if (isInViewport && !animId) {
+            lastNow = performance.now();
+            animId = requestAnimationFrame(animate);
+          }
+        },
+        { threshold: 0.05 }
+      );
+      observer.observe(container);
+    }
 
     animId = requestAnimationFrame(animate);
 
     return () => {
       if (animId) cancelAnimationFrame(animId);
-      observer.disconnect();
+      if (observer) observer.disconnect();
       window.removeEventListener('resize', buildLayout);
       canvas.removeEventListener('mousedown', onPointerDown);
       window.removeEventListener('mousemove', onPointerMove);
@@ -653,7 +936,7 @@ function TechText({
   return (
     <div
       ref={containerRef}
-      className="w-full h-[180px] sm:h-[240px] lg:h-[280px] relative select-none cursor-grab active:cursor-grabbing"
+      className="w-full h-[175px] sm:h-[235px] lg:h-[270px] relative select-none cursor-grab active:cursor-grabbing"
     >
       <canvas ref={canvasRef} className="block w-full h-full" />
     </div>
@@ -661,35 +944,10 @@ function TechText({
 }
 
 /**
- * Интерактивная 3D-карусель FlexCarousel в стиле карточек Apple Store / iOS Widgets.
- * Оптимизирована: цикл анимации усыпляется после остановки карточек и
- * мгновенно пробуждается при взаимодействии пользователя.
+ * Четкая 3D-карусель FlexCarousel (без мыльного 3D-растяжения шрифтов).
+ * Центральная карточка в покое рендерится нативным 2D-слоем (transform: none) для Retina-резкости.
  */
-function FlexCarousel({
-  items = [],
-  preset = 'liquid',
-  intro = 'rise',
-  cardHeight = 0.5,
-  gap = 12,
-  squeeze = 0.2,
-  focusOnClick = true,
-  captions = true,
-  radius = 0,
-  lensWidth = 0.74,
-  lensHeight = 1.18,
-  tilt = 62,
-  roundness = 1,
-  bend = 0.34,
-  reach = 0.38,
-  curl = 'twist',
-  dispersion = 0.45,
-  liquid = 0,
-  followCursor = false,
-  autoplay = false,
-  interval = 4,
-  captureWheel = true,
-  onSelectModule
-}) {
+function FlexCarousel({ items = [], onSelectModule }) {
   const wrapperRef = useRef(null);
   const cardRefs = useRef([]);
   const wakeRef = useRef(() => {});
@@ -703,11 +961,7 @@ function FlexCarousel({
     startX: 0,
     dragStartPos: 0,
     movedDistance: 0,
-    wheelAccumulator: 0,
-    introProgress: intro === 'rise' ? 0 : 1,
-    introStart: performance.now(),
-    cursorX: 0,
-    cursorY: 0
+    wheelAccumulator: 0
   });
 
   const count = items.length;
@@ -729,19 +983,6 @@ function FlexCarousel({
   );
 
   useEffect(() => {
-    if (!autoplay || count <= 1) return;
-    const timer = setInterval(() => {
-      if (!stateRef.current.isDragging) {
-        stateRef.current.targetIndex += 1;
-        const norm = ((Math.round(stateRef.current.targetIndex) % count) + count) % count;
-        setActiveIndex(norm);
-        wakeRef.current();
-      }
-    }, Math.max(1.5, interval) * 1000);
-    return () => clearInterval(timer);
-  }, [autoplay, interval, count]);
-
-  useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
     const updateWidth = () => {
@@ -755,58 +996,43 @@ function FlexCarousel({
 
   useEffect(() => {
     const el = wrapperRef.current;
-    if (!el || !captureWheel || count <= 1) return;
-
+    if (!el || count <= 1) return;
     const handleWheel = (e) => {
       const isHorizontal = Math.abs(e.deltaX) > Math.abs(e.deltaY) || e.shiftKey;
       if (!isHorizontal) return;
-
-      const dominantDelta =
-        Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      const dominantDelta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
       if (Math.abs(dominantDelta) < 2) return;
-
       e.preventDefault();
       stateRef.current.wheelAccumulator += dominantDelta;
-
-      const stepThreshold = 65;
-      if (Math.abs(stateRef.current.wheelAccumulator) >= stepThreshold) {
-        const steps = Math.trunc(stateRef.current.wheelAccumulator / stepThreshold);
-        stateRef.current.wheelAccumulator -= steps * stepThreshold;
+      if (Math.abs(stateRef.current.wheelAccumulator) >= 65) {
+        const steps = Math.trunc(stateRef.current.wheelAccumulator / 65);
+        stateRef.current.wheelAccumulator -= steps * 65;
         stateRef.current.targetIndex += steps;
         const norm = ((Math.round(stateRef.current.targetIndex) % count) + count) % count;
         setActiveIndex(norm);
         wakeRef.current();
       }
     };
-
     el.addEventListener('wheel', handleWheel, { passive: false });
     return () => el.removeEventListener('wheel', handleWheel);
-  }, [captureWheel, count]);
+  }, [count]);
 
   useEffect(() => {
     if (count === 0) return;
     let rafId = 0;
-    stateRef.current.introStart = performance.now();
 
-    const animate = (now) => {
+    const animate = () => {
       const s = stateRef.current;
-
-      if (intro === 'rise' && s.introProgress < 1) {
-        const rawT = Math.min(1, (now - s.introStart) / 750);
-        s.introProgress = 1 - Math.pow(1 - rawT, 3);
-      } else {
-        s.introProgress = 1;
-      }
-
       if (!s.isDragging) {
-        const springStiffness = preset === 'liquid' ? 0.12 : 0.15;
-        s.currentPos += (s.targetIndex - s.currentPos) * springStiffness;
+        s.currentPos += (s.targetIndex - s.currentPos) * 0.14;
       }
+
+      const settled = !s.isDragging && Math.abs(s.targetIndex - s.currentPos) < 0.001;
+      if (settled) s.currentPos = s.targetIndex;
 
       const isMobile = containerWidth < 640;
-      const baseCardW = isMobile ? Math.min(290, containerWidth - 56) : 345;
-      const spacingBase = baseCardW * (0.86 - squeeze * 0.28) + gap;
-      const borderRadiusPx = radius > 0 ? radius : Math.round(roundness * 26);
+      const baseCardW = isMobile ? Math.min(296, containerWidth - 48) : 356;
+      const spacingBase = baseCardW * 0.8 + 14;
 
       for (let i = 0; i < count; i++) {
         const cardEl = cardRefs.current[i];
@@ -819,106 +1045,53 @@ function FlexCarousel({
         const absD = Math.abs(delta);
         const sign = delta === 0 ? 0 : delta > 0 ? 1 : -1;
 
-        const sigma = Math.max(0.18, reach * 1.65);
-        const lensFactor = Math.exp(-(delta * delta) / (2 * sigma * sigma));
-
-        const scaleX =
-          (1 + (lensWidth - 0.68) * 0.24 * lensFactor) *
-          (1 - Math.min(0.26, absD * squeeze * 0.45));
-        const scaleY =
-          (1 + (lensHeight - 1.0) * 0.34 * lensFactor) *
-          (1 - Math.min(0.26, absD * squeeze * 0.45));
-
-        const tx = delta * spacingBase;
-        const introOffsetY = (1 - s.introProgress) * (65 + i * 14);
-        const ty = Math.pow(absD, 1.65) * (bend * 42) + introOffsetY;
-        const tz = -Math.pow(absD, 1.45) * (135 + bend * 200) + lensFactor * 44;
-
-        const rotY = -sign * Math.min(tilt, absD * (tilt * 0.58));
-        const rotZ = curl === 'twist' ? sign * Math.min(10, absD * 4.4) : 0;
-        const rotX = curl === 'twist' ? Math.min(7, absD * 3.2) : 0;
-
-        const cursorTiltY = followCursor ? s.cursorX * 5 * lensFactor : 0;
-        const cursorTiltX = followCursor ? -s.cursorY * 5 * lensFactor : 0;
-
-        const opacity =
-          s.introProgress * Math.max(0.32, 1 - Math.max(0, absD - 1.35) * 0.45);
+        const opacity = Math.max(0.38, 1 - Math.max(0, absD - 1.25) * 0.42);
         const zIndex = Math.round(50 - absD * 10);
 
-        const dispPx = Math.round((2 + absD * 4.5) * dispersion * 2.0);
-        const centerElevation =
-          absD < 0.35
-            ? `0 22px 48px rgba(0, 113, 227, ${(1 - absD / 0.35) * 0.14}),`
-            : '';
+        if (settled && absD < 0.005) {
+          cardEl.style.transform = 'none';
+          cardEl.style.boxShadow =
+            '0 22px 48px -12px rgba(0, 113, 227, 0.16), 0 10px 24px -8px rgba(15, 23, 42, 0.08)';
+        } else {
+          const tx = Math.round(delta * spacingBase);
+          const ty = Math.round(Math.pow(absD, 1.55) * 14);
+          const scale = Math.max(0.76, 1 - absD * 0.11);
+          const rotY = -sign * Math.min(34, absD * 22);
+          const rotZ = sign * Math.min(5, absD * 2.4);
+          cardEl.style.transform = `translate3d(${tx}px, ${ty}px, 0px) rotateY(${rotY.toFixed(
+            1
+          )}deg) rotateZ(${rotZ.toFixed(1)}deg) scale(${scale.toFixed(3)})`;
+          cardEl.style.boxShadow =
+            absD < 0.35
+              ? '0 22px 48px -12px rgba(0, 113, 227, 0.16), 0 10px 24px -8px rgba(15, 23, 42, 0.08)'
+              : '0 14px 32px -12px rgba(15, 23, 42, 0.11)';
+        }
 
-        cardEl.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(
-          2
-        )}px, ${tz.toFixed(2)}px) rotateY(${(rotY + cursorTiltY).toFixed(
-          2
-        )}deg) rotateX(${(rotX + cursorTiltX).toFixed(2)}deg) rotateZ(${rotZ.toFixed(
-          2
-        )}deg) scale(${scaleX.toFixed(4)}, ${scaleY.toFixed(4)})`;
         cardEl.style.opacity = opacity.toFixed(3);
         cardEl.style.zIndex = String(zIndex);
-        cardEl.style.borderRadius = `${borderRadiusPx}px`;
-        cardEl.style.boxShadow = `${centerElevation} ${-dispPx}px 0 ${
-          10 + dispPx
-        }px rgba(56, 189, 248, ${(0.12 * dispersion).toFixed(3)}), ${dispPx}px 0 ${
-          10 + dispPx
-        }px rgba(0, 113, 227, ${(0.14 * dispersion).toFixed(
-          3
-        )}), 0 18px 40px rgba(15, 23, 42, 0.09)`;
       }
 
-      const settled =
-        !s.isDragging &&
-        s.introProgress >= 1 &&
-        Math.abs(s.targetIndex - s.currentPos) < 0.0008 &&
-        !followCursor;
-
       if (settled) {
-        s.currentPos = s.targetIndex;
         rafId = 0;
         return;
       }
-
       rafId = requestAnimationFrame(animate);
     };
 
     wakeRef.current = () => {
-      if (!rafId) {
-        rafId = requestAnimationFrame(animate);
-      }
+      if (!rafId) rafId = requestAnimationFrame(animate);
     };
-
     rafId = requestAnimationFrame(animate);
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
       wakeRef.current = () => {};
     };
-  }, [
-    count,
-    containerWidth,
-    preset,
-    intro,
-    gap,
-    squeeze,
-    radius,
-    lensWidth,
-    lensHeight,
-    tilt,
-    roundness,
-    bend,
-    reach,
-    curl,
-    dispersion,
-    liquid,
-    followCursor
-  ]);
+  }, [count, containerWidth]);
 
   const handlePointerDown = (e) => {
-    if (e.target.closest('button, input, select, a')) return;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    if (e.target.closest && e.target.closest('button, input, select, a')) return;
+    const touch = e.touches && e.touches[0];
+    const clientX = touch ? touch.clientX : e.clientX;
     stateRef.current.isDragging = true;
     stateRef.current.startX = clientX;
     stateRef.current.dragStartPos = stateRef.current.currentPos;
@@ -927,17 +1100,9 @@ function FlexCarousel({
   };
 
   const handlePointerMove = (e) => {
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-    if (followCursor && wrapperRef.current) {
-      const rect = wrapperRef.current.getBoundingClientRect();
-      stateRef.current.cursorX = ((clientX - rect.left) / rect.width - 0.5) * 2;
-      stateRef.current.cursorY = ((clientY - rect.top) / rect.height - 0.5) * 2;
-      wakeRef.current();
-    }
-
     if (!stateRef.current.isDragging) return;
+    const touch = e.touches && e.touches[0];
+    const clientX = touch ? touch.clientX : e.clientX;
     const dx = clientX - stateRef.current.startX;
     stateRef.current.movedDistance = Math.abs(dx);
     const dragStepPx = containerWidth < 640 ? 220 : 280;
@@ -950,30 +1115,22 @@ function FlexCarousel({
     stateRef.current.isDragging = false;
     const snapped = Math.round(stateRef.current.currentPos);
     stateRef.current.targetIndex = snapped;
-    const norm = ((snapped % count) + count) % count;
-    setActiveIndex(norm);
+    setActiveIndex(((snapped % count) + count) % count);
     wakeRef.current();
   };
 
   const handleCardClick = (idx, item) => {
     if (stateRef.current.movedDistance > 10) return;
-
-    if (focusOnClick && idx !== activeIndex) {
+    if (idx !== activeIndex) {
       goToIndex(idx);
       return;
     }
-
-    if (onSelectModule) {
-      onSelectModule(item);
-    }
+    if (onSelectModule) onSelectModule(item);
   };
 
   const isMobile = containerWidth < 640;
-  const computedCardHeight = Math.max(
-    isMobile ? 360 : 330,
-    Math.round(540 * Math.max(0.5, cardHeight + 0.1))
-  );
-  const cardWidthPx = isMobile ? Math.min(290, containerWidth - 56) : 345;
+  const cardHeightPx = isMobile ? 356 : 344;
+  const cardWidthPx = isMobile ? Math.min(296, containerWidth - 48) : 356;
   const activeItem = items[activeIndex] || items[0];
 
   return (
@@ -986,16 +1143,11 @@ function FlexCarousel({
       onTouchStart={handlePointerDown}
       onTouchMove={handlePointerMove}
       onTouchEnd={handlePointerUp}
-      style={{ height: `${computedCardHeight + (captions ? 92 : 32)}px` }}
+      style={{ height: `${cardHeightPx + 96}px` }}
       className="w-full relative select-none overflow-hidden flex flex-col items-center justify-center cursor-grab active:cursor-grabbing"
     >
-      {/* 3D-сцена с карточками модулей */}
       <div
-        style={{
-          height: `${computedCardHeight}px`,
-          perspective: '1250px',
-          transformStyle: 'preserve-3d'
-        }}
+        style={{ height: `${cardHeightPx}px`, perspective: '1300px' }}
         className="w-full relative flex items-center justify-center"
       >
         {items.map((item, idx) => {
@@ -1010,17 +1162,23 @@ function FlexCarousel({
               onClick={() => handleCardClick(idx, item)}
               style={{
                 width: `${cardWidthPx}px`,
-                height: `${computedCardHeight - 16}px`,
-                willChange: 'transform, opacity'
+                height: `${cardHeightPx - 12}px`,
+                borderRadius: '26px',
+                backfaceVisibility: 'hidden',
+                WebkitFontSmoothing: 'antialiased'
               }}
-              className="absolute bg-white/95 backdrop-blur-2xl border border-black/[0.08] p-6 sm:p-7 flex flex-col justify-between cursor-pointer transition-colors"
+              className={`absolute bg-white border p-6 sm:p-7 flex flex-col justify-between cursor-pointer transition-colors ${
+                isCenter ? 'border-[#0071E3]/25' : 'border-black/[0.08]'
+              }`}
             >
               <div>
                 <div className="flex items-center justify-between gap-2 mb-4">
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0071E3] bg-[#0071E3]/[0.08] px-3 py-1 rounded-full">
-                    <IconComponent className="w-3.5 h-3.5" />
-                    <span>{item.badge}</span>
-                  </span>
+                  <div className="inline-flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-xl bg-[#0071E3]/[0.1] text-[#0071E3] flex items-center justify-center shrink-0">
+                      <IconComponent className="w-4 h-4" />
+                    </span>
+                    <span className="text-xs font-semibold text-[#0071E3]">{item.badge}</span>
+                  </div>
                   <span className="text-xs font-mono font-semibold text-[#86868B]">
                     0{idx + 1} / 0{count}
                   </span>
@@ -1030,9 +1188,7 @@ function FlexCarousel({
                   {item.title}
                 </h3>
 
-                <p className="text-sm text-[#6E6E73] leading-relaxed mb-4">
-                  {item.description}
-                </p>
+                <p className="text-sm text-[#6E6E73] leading-relaxed mb-4">{item.description}</p>
 
                 <ul className="space-y-1.5 text-xs sm:text-sm text-[#1D1D1F]/85">
                   {item.highlights.map((hl, hIdx) => (
@@ -1052,9 +1208,9 @@ function FlexCarousel({
                     e.stopPropagation();
                     if (onSelectModule) onSelectModule(item);
                   }}
-                  className={`inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-4 py-2 rounded-full transition-all cursor-pointer ${
+                  className={`pp-btn inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-4 py-2 rounded-full cursor-pointer ${
                     isCenter
-                      ? 'bg-[#0071E3] text-white hover:bg-[#0077ED] shadow-2xs'
+                      ? 'bg-[#0071E3] text-white hover:bg-[#0077ED]'
                       : 'bg-[#F5F5F7] text-[#1D1D1F] hover:bg-black/10'
                   }`}
                 >
@@ -1067,19 +1223,17 @@ function FlexCarousel({
         })}
       </div>
 
-      {/* Нижняя панель навигации и подписи */}
-      {captions && activeItem && (
-        <div className="mt-4 flex flex-col items-center gap-2.5 z-20 px-4">
-          <div className="flex items-center gap-3 bg-white/85 backdrop-blur-md border border-black/[0.07] px-3 py-1.5 rounded-full shadow-2xs">
+      {activeItem && (
+        <div className="mt-4 flex flex-col items-center gap-2 z-20 px-4">
+          <div className="flex items-center gap-3 bg-white border border-black/[0.08] px-3 py-1.5 rounded-full shadow-sm">
             <button
               type="button"
               onClick={() => goToIndex(activeIndex - 1)}
-              className="w-7 h-7 rounded-full hover:bg-black/[0.06] flex items-center justify-center text-[#1D1D1F] transition-colors cursor-pointer"
+              className="w-7 h-7 rounded-full hover:bg-black/[0.06] flex items-center justify-center text-[#1D1D1F] cursor-pointer"
               aria-label="Предыдущий модуль"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-
             <div className="flex items-center gap-1.5">
               {items.map((it, idx) => (
                 <button
@@ -1088,18 +1242,15 @@ function FlexCarousel({
                   onClick={() => goToIndex(idx)}
                   aria-label={`Перейти к карточке ${idx + 1}`}
                   className={`h-2 rounded-full transition-all cursor-pointer ${
-                    idx === activeIndex
-                      ? 'w-6 bg-[#0071E3]'
-                      : 'w-2 bg-black/20 hover:bg-black/40'
+                    idx === activeIndex ? 'w-6 bg-[#0071E3]' : 'w-2 bg-black/20 hover:bg-black/40'
                   }`}
                 />
               ))}
             </div>
-
             <button
               type="button"
               onClick={() => goToIndex(activeIndex + 1)}
-              className="w-7 h-7 rounded-full hover:bg-black/[0.06] flex items-center justify-center text-[#1D1D1F] transition-colors cursor-pointer"
+              className="w-7 h-7 rounded-full hover:bg-black/[0.06] flex items-center justify-center text-[#1D1D1F] cursor-pointer"
               aria-label="Следующий модуль"
             >
               <ChevronRight className="w-4 h-4" />
@@ -1113,6 +1264,535 @@ function FlexCarousel({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Интерактивный радар ловушек работодателей (адаптация Reachable Crowd под «ПравоПодростка 14–17»).
+ * Маяк со щитом находится в естественном потоке под кнопкой «Составить претензию» без наложений.
+ */
+const PEEP_BASE =
+  'https://wbarljqnwyapytycfglm.supabase.co/storage/v1/object/public/canvas_assets/c5b084d7-d978-4942-8775-19c92226e9c1/';
+const PEEP_URLS = [
+  '381d6479-f5b5-49ca-82f3-474c87c62996',
+  '9df39fca-20db-4273-bf7e-488d04a13321',
+  '3c8ee64a-67b3-4a2c-84d5-c665c725e7c5',
+  '3ccafa92-f479-4885-a6fb-0af92993b7f6',
+  '735686b6-9bd5-4ab1-9fe6-59c50b5e2eb0',
+  '3f775475-8920-4f55-b7c1-16bf192a0b1f',
+  'b56ceaf5-7fb3-40a2-bb1a-d41c547c71ca',
+  '4bd0452d-b321-4488-b57a-0c52dc73ceb1',
+  '5d3553c5-a46f-4238-bcb5-02ff60b0f907',
+  '6669baf9-e6d8-476b-abd4-e3d52517aee8',
+  '2a2fffcb-9e4e-4610-a2ec-c2c334e29001',
+  '742a5c0b-c77f-4ab3-96eb-dbca387f5ff8'
+].map((id) => `${PEEP_BASE}${id}.svg`);
+
+const TRAP_SIGNALS = [
+  {
+    tag: 'Стажировка',
+    tc: 'warn',
+    signal: '«Первые 5 смен — бесплатно»',
+    lab: 'Ст. 16, 67 ТК РФ',
+    line: 'Допуск к работе = договор с 1-го часа',
+    rtag: 'По закону',
+    rc: 'ok',
+    reply: 'Оплатили все 5 смен полностью'
+  },
+  {
+    tag: 'Испытание',
+    tc: 'danger',
+    signal: '«Испытательный срок 2 недели»',
+    lab: 'Ч. 4 ст. 70 ТК РФ',
+    line: 'Испытание до 18 лет прямо запрещено',
+    rtag: 'Защищено',
+    rc: 'ok',
+    reply: 'Пункт об испытании исключили'
+  },
+  {
+    tag: 'Штрафы',
+    tc: 'danger',
+    signal: '«Штраф 1000 ₽ за опоздание»',
+    lab: 'Ст. 192, 244 ТК РФ',
+    line: 'Денежные штрафы в ТК РФ незаконны',
+    rtag: 'Отменено',
+    rc: 'ok',
+    reply: 'Зарплату выплатили без вычетов'
+  },
+  {
+    tag: 'Без договора',
+    tc: 'warn',
+    signal: '«Оформим потом, платим наличкой»',
+    lab: 'Ст. 67 ТК РФ',
+    line: 'Письменный договор обязателен за 3 дня',
+    rtag: 'Оформлено',
+    rc: 'ok',
+    reply: 'Подписали договор в 2 экземплярах'
+  },
+  {
+    tag: 'Ночная смена',
+    tc: 'danger',
+    signal: '«Выйдешь в смену до 01:00 ночи»',
+    lab: 'Ст. 96, 268 ТК РФ',
+    line: 'Работа с 22:00 до 06:00 запрещена',
+    rtag: 'Исправлено',
+    rc: 'ok',
+    reply: 'Перевели на дневной график'
+  }
+];
+
+function EmployerTrapsCrowdHero({ onOpenClaim }) {
+  const rootRef = useRef(null);
+  const canvasRef = useRef(null);
+  const crowdRef = useRef(null);
+  const beaconRef = useRef(null);
+  const cboxRef = useRef(null);
+  const clabRef = useRef(null);
+  const ctxtRef = useRef(null);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    const fx = canvasRef.current;
+    const crowd = crowdRef.current;
+    const btile = beaconRef.current;
+    const cbox = cboxRef.current;
+    const clab = clabRef.current;
+    const ctxt = ctxtRef.current;
+    if (!root || !fx || !crowd || !btile) return;
+
+    const ctx = fx.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let W = root.clientWidth || 960;
+    let H = root.clientHeight || 600;
+    let beaconX = W / 2;
+    let beaconY = 260;
+    let crowdTop = 310;
+    let crowdH = 290;
+
+    const measure = () => {
+      const rRect = root.getBoundingClientRect();
+      W = Math.max(240, rRect.width || 960);
+      H = Math.max(360, rRect.height || 600);
+      fx.width = Math.floor(W * dpr);
+      fx.height = Math.floor(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const bRect = btile.getBoundingClientRect();
+      beaconX = bRect.left - rRect.left + bRect.width / 2;
+      beaconY = bRect.top - rRect.top + bRect.height / 2;
+
+      const cRect = crowd.getBoundingClientRect();
+      crowdTop = cRect.top - rRect.top;
+      crowdH = cRect.height || 290;
+    };
+
+    measure();
+    let ro = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(measure);
+      ro.observe(root);
+    } else {
+      window.addEventListener('resize', measure);
+    }
+
+    let seed = 42;
+    const rnd = () => {
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const ease = (k) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+
+    const COL = '#0071E3';
+    const al = (o) => `rgba(0, 113, 227, ${o})`;
+
+    crowd.innerHTML = '';
+    const P = [];
+    const fadeFilter = (p) =>
+      `blur(${Math.max(0, (70 - p.t) * 0.035).toFixed(2)}px) contrast(${(
+        0.48 +
+        0.35 * p.depth
+      ).toFixed(2)}) brightness(${(1 / (0.76 + 0.16 * p.depth)).toFixed(2)})`;
+
+    const place = (p, anywhere) => {
+      p.t = 34 + rnd() * 48;
+      p.depth = (p.t - 34) / 48;
+      p.w = 108 + (p.t - 34) * 1.65;
+      p.h = p.w * 1.32;
+      p.dir = rnd() < 0.5 ? 1 : -1;
+      p.speed = 6.5 + rnd() * 5.5;
+      p.x = anywhere ? 8 + rnd() * 84 : p.dir > 0 ? -8 : 108;
+      p.v = 1;
+      p.state = 'walk';
+      p.reached = false;
+      p.ph = rnd() * Math.PI * 2;
+      p.f = 1.6 + p.speed * 0.14;
+      p.bob = 0;
+      p.px = (p.x / 100) * W;
+      p.el.className = 'pw';
+      p.el.style.cssText = `top:${p.t.toFixed(1)}%;width:${p.w.toFixed(0)}px;height:${p.h.toFixed(
+        0
+      )}px;z-index:${Math.round(p.t)}`;
+      p.img.src = PEEP_URLS[Math.floor(rnd() * PEEP_URLS.length)];
+      p.img.style.filter = fadeFilter(p);
+      p.img.style.transform = `scaleX(${p.dir})`;
+    };
+
+    const peepCount = W < 640 ? 14 : 24;
+    for (let i = 0; i < peepCount; i++) {
+      const el = document.createElement('div');
+      el.innerHTML =
+        '<div class="pe"><div class="hp"><img alt="" draggable="false" decoding="async"><i class="ok-badge"><svg width="13" height="13" viewBox="0 0 24 24"><path fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5"/></svg></i></div></div>';
+      crowd.appendChild(el);
+      const p = {
+        el,
+        pe: el.firstChild,
+        hp: el.firstChild.firstChild,
+        img: el.querySelector('img')
+      };
+      place(p, true);
+      P.push(p);
+    }
+
+    const headPos = (p) => [p.px, crowdTop + (crowdH * p.t) / 100 - p.h * 0.18 + p.bob];
+
+    const slots = [0, 1].map(() => {
+      const tip = document.createElement('div');
+      tip.className = 'tip-wrap';
+      tip.innerHTML = '<div class="tbox"></div>';
+      root.appendChild(tip);
+      return { tip, box: tip.querySelector('.tbox'), p: null };
+    });
+
+    let comp = null;
+    let side = 1;
+    let di = 0;
+    let nextAt = 0.5;
+    let alive = true;
+
+    const pulseBeacon = () => {
+      btile.classList.add('pulse');
+      setTimeout(() => {
+        if (alive) btile.classList.remove('pulse');
+      }, 360);
+    };
+
+    const pickPerson = () => {
+      const activeXs = slots.filter((s) => s.p).map((s) => s.p.px);
+      const cx = W / 2;
+      const ok = (p) => {
+        if (p.state !== 'walk' || p.reached || p.t < 46) return false;
+        return (
+          p.px > W * 0.16 &&
+          p.px < W * 0.84 &&
+          Math.abs(p.px - cx) > 90 &&
+          activeXs.every((ax) => Math.abs(ax - p.px) > 260)
+        );
+      };
+      let candidates = P.filter(ok);
+      const pref = candidates.filter((p) => (p.px - cx) * side > 0);
+      if (pref.length) candidates = pref;
+      if (!candidates.length) return null;
+      side = -side;
+      return candidates[Math.floor(rnd() * candidates.length)];
+    };
+
+    const startSlot = (now) => {
+      const s = slots.find((sl) => !sl.p);
+      if (!s) {
+        nextAt = now + 0.3;
+        return;
+      }
+      const p = pickPerson();
+      if (!p) {
+        nextAt = now + 0.35;
+        return;
+      }
+      s.p = p;
+      s.d = TRAP_SIGNALS[di++ % TRAP_SIGNALS.length];
+      s.t0 = now;
+      s.st = 0;
+      nextAt = now + 2.8;
+      p.state = 'locked';
+      p.el.style.zIndex = '180';
+      p.img.style.filter = 'none';
+    };
+
+    const drawReach = (s, a, now, hx, hy) => {
+      const p = s.p;
+      const P0 = [beaconX, beaconY];
+      const P1 = [(P0[0] + hx) / 2, Math.min(beaconY, hy) - (24 + Math.abs(hx - P0[0]) * 0.06)];
+      const B = (u) => {
+        const v = 1 - u;
+        return [
+          v * v * P0[0] + 2 * v * u * P1[0] + u * u * hx,
+          v * v * P0[1] + 2 * v * u * P1[1] + u * u * hy
+        ];
+      };
+      const seg = (u0, u1, n) => {
+        ctx.beginPath();
+        for (let i = 0; i <= n; i++) {
+          const q = B(u0 + ((u1 - u0) * i) / n);
+          if (i) ctx.lineTo(q[0], q[1]);
+          else ctx.moveTo(q[0], q[1]);
+        }
+        ctx.stroke();
+      };
+
+      ctx.strokeStyle = COL;
+      ctx.lineCap = 'round';
+
+      if (a < 3.4) {
+        const R = p.w * 0.25;
+        const k = Math.min(1, a / 0.45);
+        const e = 1 - Math.pow(1 - k, 3);
+        ctx.save();
+        ctx.translate(hx, hy);
+        ctx.rotate(now * 1.1);
+        ctx.globalAlpha = 0.85 * k;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([R * 0.48, R * 0.28]);
+        ctx.beginPath();
+        ctx.arc(0, 0, R * (2.0 - 1.0 * e), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      if (a < 5.6) {
+        ctx.save();
+        ctx.lineWidth = 1.4;
+        if (a < 3.4) {
+          ctx.globalAlpha = 0.48;
+          ctx.setLineDash([4, 6]);
+          ctx.lineDashOffset = -now * 26;
+          seg(0, Math.min(1, a / 0.55), 24);
+        } else {
+          ctx.globalAlpha = 0.32 * Math.min(1, (5.6 - a) / 0.4);
+          seg(0, 1, 24);
+        }
+        ctx.restore();
+      }
+
+      if (a >= 2.55 && a < 3.4) {
+        const u = ease((a - 2.55) / 0.85);
+        ctx.save();
+        ctx.shadowColor = al(0.75);
+        ctx.shadowBlur = 12;
+        for (let i = 0; i < 10; i++) {
+          const u1 = u - (0.38 * i) / 10;
+          const u0 = u - (0.38 * (i + 1)) / 10;
+          if (u1 <= 0) break;
+          const f = 1 - i / 10;
+          ctx.globalAlpha = f * 0.85;
+          ctx.lineWidth = 5 * f + 1;
+          seg(Math.max(0, u0), u1, 3);
+        }
+        const q = B(u);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.strokeStyle = COL;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(q[0], q[1], 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      if (a >= 3.4 && a < 4.0) {
+        const k = (a - 3.4) / 0.6;
+        const e = 1 - Math.pow(1 - k, 3);
+        ctx.save();
+        ctx.globalAlpha = 1 - k;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.arc(hx, hy, p.w * 0.18 + e * p.w * 0.3, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    };
+
+    let raf = 0;
+    let last = performance.now();
+    let nowSec = 0;
+
+    const loop = (ms) => {
+      if (!alive) return;
+      const dt = Math.min(0.05, Math.max(0, (ms - last) / 1000));
+      last = ms;
+      nowSec += dt;
+
+      for (const p of P) {
+        const tv = p.state === 'walk' ? 1 : p.state === 'locked' ? 0.3 : 0;
+        p.v += (tv - p.v) * Math.min(1, dt * 5);
+        p.x += p.dir * p.speed * p.v * dt;
+        if ((p.x > 110 || p.x < -10) && p.state === 'walk') place(p, false);
+        const s = Math.sin(nowSec * Math.PI * p.f + p.ph);
+        p.bob = -Math.abs(s) * (1.2 + 2.0 * p.depth) * p.v;
+        p.px = (p.x / 100) * W;
+        p.pe.style.transform = `translate3d(${Math.round(p.px - p.w / 2)}px, ${Math.round(
+          -p.h / 2 + p.bob
+        )}px, 0) rotate(${(s * 0.6 * p.v).toFixed(2)}deg)`;
+      }
+
+      if (nowSec >= nextAt) startSlot(nowSec);
+      ctx.clearRect(0, 0, W, H);
+
+      for (const s of slots) {
+        if (!s.p) continue;
+        const a = nowSec - s.t0;
+        const p = s.p;
+        const d = s.d;
+
+        if (s.st < 1 && a >= 0.7) {
+          s.st = 1;
+          s.box.innerHTML = `<span class="tg ${d.tc}">${d.tag}</span><span>${d.signal}</span>`;
+          s.box.className = 'tbox show';
+        }
+        if (s.st < 2 && a >= 1.5) {
+          s.st = 2;
+          comp = { d, t0: nowSec, n: -1 };
+          if (clab) clab.textContent = d.lab;
+          if (ctxt) ctxt.textContent = '';
+          if (cbox) cbox.classList.add('show');
+        }
+        if (s.st < 3 && a >= 2.55) {
+          s.st = 3;
+          if (comp && comp.d === d) {
+            if (cbox) cbox.classList.remove('show');
+            comp = null;
+          }
+          pulseBeacon();
+        }
+        if (s.st < 4 && a >= 3.4) {
+          s.st = 4;
+          p.state = 'read';
+          p.reached = true;
+          p.img.style.filter = `drop-shadow(0 0 12px ${al(0.55)})`;
+          p.el.classList.add('hop');
+          setTimeout(() => {
+            if (alive) p.el.classList.remove('hop');
+          }, 450);
+        }
+        if (s.st < 5 && a >= 4.0) {
+          s.st = 5;
+          s.box.classList.add('flip');
+          setTimeout(() => {
+            if (!alive || !s.p) return;
+            s.box.innerHTML = `<span class="tg ${d.rc}">${d.rtag}</span><span>${d.reply}</span>`;
+            s.box.className = 'tbox show';
+          }, 140);
+        }
+        if (s.st < 6 && a >= 5.1) {
+          s.st = 6;
+          pulseBeacon();
+          p.el.classList.add('done');
+        }
+        if (s.st < 7 && a >= 6.0) {
+          s.st = 7;
+          s.box.className = 'tbox';
+          p.state = 'walk';
+          p.el.style.zIndex = String(Math.round(p.t));
+          p.img.style.filter = `drop-shadow(0 0 6px ${al(0.35)})`;
+        }
+        if (a >= 6.4) {
+          s.p = null;
+          continue;
+        }
+
+        const [hx, hy] = headPos(p);
+        const clampedTipX = Math.max(165, Math.min(W - 165, hx));
+        const clampedTipY = Math.max(crowdTop + 18, hy - p.h * 0.2 - 12);
+        s.tip.style.transform = `translate3d(${Math.round(clampedTipX)}px, ${Math.round(
+          clampedTipY
+        )}px, 0)`;
+        drawReach(s, a, nowSec, hx, hy);
+      }
+
+      if (comp && ctxt) {
+        const L = comp.d.line;
+        const n = Math.ceil(Math.min(1, (nowSec - comp.t0) / 0.75) * L.length);
+        if (n !== comp.n) {
+          comp.n = n;
+          ctxt.textContent = L.slice(0, n);
+        }
+      }
+
+      raf = requestAnimationFrame(loop);
+    };
+
+    raf = requestAnimationFrame(loop);
+
+    return () => {
+      alive = false;
+      cancelAnimationFrame(raf);
+      if (ro) ro.disconnect();
+      else window.removeEventListener('resize', measure);
+      slots.forEach((s) => s.tip.remove());
+      crowd.innerHTML = '';
+    };
+  }, []);
+
+  return (
+    <section
+      ref={rootRef}
+      className="traps-stage rounded-[28px] border border-black/[0.06] shadow-[0_8px_32px_rgba(0,0,0,0.04)] pt-8 sm:pt-10 px-4 sm:px-8"
+    >
+      <div className="relative z-10 max-w-3xl mx-auto text-center">
+        <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#0071E3] bg-[#0071E3]/[0.08] px-3.5 py-1.5 rounded-full mb-3">
+          <span className="w-2 h-2 rounded-full bg-[#0071E3]" />
+          <span>Живой радар нарушений ТК РФ</span>
+        </div>
+
+        <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight text-[#1D1D1F] leading-tight mb-2.5">
+          Уловки работодателей, которые{' '}
+          <span className="text-[#0071E3]">останавливает закон.</span>
+        </h2>
+
+        <p className="text-sm sm:text-base text-[#6E6E73] leading-relaxed mb-5 max-w-2xl mx-auto">
+          Смотрите, как работает правовая защита на практике: на каждую незаконную уловку на
+          подработке существует конкретная статья Трудового кодекса РФ.
+        </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={onOpenClaim}
+            className="pp-btn inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold px-6 py-3 rounded-full cursor-pointer shadow-sm"
+          >
+            <FileText className="w-4 h-4" />
+            <span>Составить претензию</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Центральный правовой маяк строго ПОД кнопкой с чистым отступом */}
+      <div className="relative z-10 flex flex-col items-center mt-7 mb-2">
+        <div
+          ref={beaconRef}
+          className="btile w-14 h-14 rounded-2xl bg-[#0071E3] text-white flex items-center justify-center shadow-[0_0_0_5px_rgba(255,255,255,0.9),0_14px_28px_-10px_rgba(0,113,227,0.75)]"
+        >
+          <ShieldCheck className="w-7 h-7" />
+        </div>
+        <div className="h-9 mt-2.5 flex items-center justify-center">
+          <div ref={cboxRef} className="cbox">
+            <span ref={clabRef} className="lab" />
+            <span ref={ctxtRef} className="font-medium" />
+          </div>
+        </div>
+      </div>
+
+      <div ref={crowdRef} className="crowd-layer z-[2]" aria-hidden="true" />
+
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none z-[5]"
+        aria-hidden="true"
+      />
+    </section>
   );
 }
 
@@ -1131,28 +1811,66 @@ const SUPPORT_MAILTO_HREF = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponen
   'Обращение с сайта «ПравоПодростка 14–17»'
 )}`;
 
+const CHANGELOG_ITEMS = [
+  {
+    date: 'Обновление 1.6',
+    title: 'Новый логотип со щитом и анимация кнопок',
+    desc: 'Добавлен фирменный векторный логотип «14–17 ПРАВОПОДРОСТКА» с живой галочкой и пружинный отклик кнопок.'
+  },
+  {
+    date: 'Обновление 1.5',
+    title: 'Живой радар ловушек работодателей',
+    desc: 'В раздел «Ловушки работодателей» добавлена интерактивная сцена с разбором 5 частых нарушений ТК РФ.'
+  },
+  {
+    date: 'Обновление 1.4',
+    title: 'Retina-чёткость 3D-карусели и ровный дефис',
+    desc: 'Убрано размытие текста на карточках карусели и выровнен дефис в интерактивном заголовке «ПРАВО 14–17».'
+  },
+  {
+    date: 'Обновление 1.3',
+    title: 'Политика конфиденциальности и страница 404',
+    desc: 'Добавлена подробная Политика конфиденциальности (10 разделов), кнопка очистки localStorage и страница 404.'
+  },
+  {
+    date: 'Запуск 1.0',
+    title: 'Публикация сайта в интернете',
+    desc: 'Запущены калькулятор подработки, конструктор документов, шкала прав 14/16/18 и симулятор финансов.'
+  }
+];
+
 export default function App() {
-  // Определение начальной вкладки из URL-хэша (#overview, #calculator, #privacy, #404 и др.)
   const getTabFromHash = () => {
-    const raw = window.location.hash.replace(/^#/, '').trim();
-    if (!raw) return 'overview';
-    return VALID_TABS.has(raw) ? raw : '404';
+    try {
+      const raw = (window.location.hash || '').replace(/^#/, '').trim();
+      if (!raw) return 'overview';
+      return VALID_TABS.has(raw) ? raw : '404';
+    } catch (_e) {
+      return 'overview';
+    }
   };
 
   const [activeTab, setActiveTab] = useState(getTabFromHash);
   const [toastMessage, setToastMessage] = useState('');
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
+  const [showChangelog, setShowChangelog] = useState(false);
   const financeSectionRef = useRef(null);
 
   const navigateTo = useCallback((tabId, options = {}) => {
     const nextTab = VALID_TABS.has(tabId) ? tabId : '404';
     setActiveTab(nextTab);
-    if (window.location.hash !== `#${nextTab}`) {
-      window.history.replaceState(null, '', `#${nextTab}`);
+    try {
+      if (window.location.hash !== `#${nextTab}`) {
+        window.history.replaceState(null, '', `#${nextTab}`);
+      }
+    } catch (_e) {
+      // ignore in sandboxed iframes
     }
     if (options.scrollToFinance) {
       setTimeout(() => {
-        financeSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (financeSectionRef.current) {
+          financeSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       }, 120);
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1160,9 +1878,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const onHashChange = () => {
-      setActiveTab(getTabFromHash());
-    };
+    const onHashChange = () => setActiveTab(getTabFromHash());
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
@@ -1176,22 +1892,32 @@ export default function App() {
 
   const copyText = useCallback(
     (text, message) => {
-      if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).then(() => showToast(message));
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        showToast(message);
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard
+            .writeText(text)
+            .then(() => showToast(message))
+            .catch(() => showToast(message));
+          return;
+        }
+      } catch (_e) {
+        // fallback below
       }
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+      } catch (_e) {
+        // ignore
+      }
+      document.body.removeChild(ta);
+      showToast(message);
     },
     [showToast]
   );
 
-  // Элементы навигации в шапке
   const navItems = useMemo(
     () => [
       { id: 'overview', label: 'Обзор', icon: Shield },
@@ -1203,7 +1929,6 @@ export default function App() {
     []
   );
 
-  // Данные для 3D-карусели FlexCarousel
   const carouselModules = useMemo(
     () => [
       {
@@ -1282,13 +2007,11 @@ export default function App() {
   );
 
   const handleOpenCarouselModule = useCallback(
-    (item) => {
-      navigateTo(item.targetTab, { scrollToFinance: Boolean(item.scrollToFinance) });
-    },
+    (item) => navigateTo(item.targetTab, { scrollToFinance: Boolean(item.scrollToFinance) }),
     [navigateTo]
   );
 
-  // 1. Чек-лист на странице «Обзор» с сохранением в localStorage
+  // 1. Чек-лист
   const checklistItems = useMemo(
     () => [
       {
@@ -1322,8 +2045,8 @@ export default function App() {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length === 5) return parsed;
       }
-    } catch {
-      // Игнорируем ограничения хранилища
+    } catch (_e) {
+      // ignore
     }
     return [false, false, false, false, false];
   });
@@ -1331,16 +2054,16 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem(CHECKLIST_STORAGE_KEY, JSON.stringify(checklist));
-    } catch {
-      // Игнорируем ограничения хранилища
+    } catch (_e) {
+      // ignore
     }
   }, [checklist]);
 
   const clearLocalStorageData = useCallback(() => {
     try {
       localStorage.removeItem(CHECKLIST_STORAGE_KEY);
-    } catch {
-      // Игнорируем ограничения хранилища
+    } catch (_e) {
+      // ignore
     }
     setChecklist([false, false, false, false, false]);
     showToast('Локальные данные чек-листа очищены');
@@ -1349,7 +2072,7 @@ export default function App() {
   const completedChecks = checklist.filter(Boolean).length;
   const checkProgress = Math.round((completedChecks / checklist.length) * 100);
 
-  // 2. Состояние калькулятора подработки
+  // 2. Калькулятор подработки
   const [age, setAge] = useState(16);
   const [period, setPeriod] = useState('study');
   const [shiftHours, setShiftHours] = useState(6);
@@ -1381,38 +2104,24 @@ export default function App() {
       setHasFine(false);
       setHasMed(false);
       setHasHeavy(false);
-    } else if (presetType === 'ok_16') {
-      setAge(16);
-      setPeriod('holiday');
-      setShiftHours(7);
-      setWeekHours(35);
-      setHasProbation(false);
-      setHasNight(false);
-      setHasFine(false);
-      setHasMed(false);
-      setHasHeavy(false);
     }
   };
 
   const analysis = useMemo(() => {
     const shift = Math.max(0, Number(shiftHours) || 0);
     const week = Math.max(0, Number(weekHours) || 0);
-
     let maxShift = 0;
     let maxWeek = 0;
 
     if (period === 'holiday') {
       maxWeek = age <= 15 ? 24 : 35;
-      if (age === 14) maxShift = 4;
-      else if (age === 15) maxShift = 5;
-      else maxShift = 7;
+      maxShift = age === 14 ? 4 : age === 15 ? 5 : 7;
     } else {
       maxWeek = age <= 15 ? 12 : 17.5;
       maxShift = age <= 15 ? 2.5 : 4;
     }
 
     const violations = [];
-
     if (shift > maxShift) {
       violations.push(
         `Превышена длительность смены: указано ${shift} ч при допустимом максимуме ${maxShift} ч в день для возраста ${age} лет (ст. 94 ТК РФ).`
@@ -1448,19 +2157,8 @@ export default function App() {
         'Запрещенные виды работ: ст. 265 ТК РФ запрещает труд несовершеннолетних на работах с вредными условиями, переноской тяжестей сверх норм и в торговле спиртным/табаком.'
       );
     }
-
     return { maxShift, maxWeek, violations };
-  }, [
-    age,
-    period,
-    shiftHours,
-    weekHours,
-    hasProbation,
-    hasNight,
-    hasFine,
-    hasMed,
-    hasHeavy
-  ]);
+  }, [age, period, shiftHours, weekHours, hasProbation, hasNight, hasFine, hasMed, hasHeavy]);
 
   // 3. Конструктор документов
   const [docType, setDocType] = useState('consent');
@@ -1511,7 +2209,7 @@ export default function App() {
 
 ТРЕБУЮ:
 1. Оформить со мной трудовой договор в письменной форме в двух экземплярах со дня фактического допуска к работе.
-2. Произвести оплату всех фактически отработанного смен в полном объеме в соответствии со ст. 136 ТК РФ.
+2. Произвести оплату всех фактически отработанных смен в полном объеме в соответствии со ст. 136 ТК РФ.
 
 Дата: ${dateFormatted}
 Подпись работника: _______________ / ${p1} /`;
@@ -1534,8 +2232,7 @@ export default function App() {
   }, [docType, docEmployer, docPerson1, docPerson2, docExtra1, docDate]);
 
   const downloadTxt = () => {
-    const text = buildDocumentText();
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([buildDocumentText()], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -1561,7 +2258,7 @@ export default function App() {
         ],
         liability: [
           'Самостоятельная имущественная ответственность по сделкам, совершенным самостоятельно (п. 3 ст. 26 ГК РФ).',
-          'Уголовная ответственность по перечню тяжких и особо тяжких преступлений (ч. 2 ст. 20 УК РФ: кража, грабеж, разбой, вымогательство, угон и др.).',
+          'Уголовная ответственность по перечню тяжких и особо тяжких преступлений (ч. 2 ст. 20 УК РФ).',
           'Соблюдение трудовой дисциплины при работе по трудовому договору.'
         ]
       },
@@ -1609,234 +2306,30 @@ export default function App() {
       parent_money: {
         ok: false,
         title: 'Требуется письменное согласие родителей (п. 1 ст. 26 ГК РФ)',
-        desc: 'Если покупка совершается не на собственный заработок/стипендию, а на крупную сумму, подаренную или выданную родителями (и сделка выходит за рамки мелкой бытовой), требуется письменное согласие законных представителей. Без него родители вправе оспорить сделку в суде по ст. 175 ГК РФ.'
+        desc: 'Если покупка совершается не на собственный заработок/стипендию, а на крупную сумму, подаренную или выданную родителями (и сделка выходит за рамки мелкой бытовой), требуется письменное согласие законных представителей.'
       },
       return_item: {
         ok: true,
         title: 'Подросток вправе сам вернуть некачественный товар (Закон о защите прав потребителей)',
-        desc: 'Если подросток с 14 лет самостоятельно совершил покупку (например, наушники или одежду), он сам является стороной договора розничной купли-продажи и вправе предъявить продавцу претензию о возврате денег или обмене бракованного товара.'
+        desc: 'Если подросток с 14 лет самостоятельно совершил покупку, он сам является стороной договора розничной купли-продажи и вправе предъявить продавцу претензию о возврате денег или обмене бракованного товара.'
       },
       dropper: {
         ok: false,
         title:
           'Опасно! Уголовная и имущественная ответственность (ст. 159, 187 УК РФ и ст. 1102 ГК РФ)',
-        desc: 'Передача своей банковской карты, логина от онлайн-банка или пересылка чужих денег за вознаграждение — участие в мошеннических схемах (дропперство). С 16 лет за это наступает уголовная ответственность, а пострадавшие вправе через суд взыскать с владельца карты всю сумму перевода как неосновательное обогащение.'
+        desc: 'Передача своей банковской карты, логина от онлайн-банка или пересылка чужих денег за вознаграждение — участие в мошеннических схемах (дропперство). С 16 лет за это наступает уголовная ответственность, а пострадавшие вправе через суд взыскать всю сумму перевода.'
       },
       emancipation: {
         ok: true,
         title: 'Возможна эмансипация (ст. 27 ГК РФ)',
-        desc: 'Несовершеннолетний, достигший 16 лет, может быть объявлен полностью дееспособным, если он работает по трудовому договору или с согласия родителей занимается предпринимательством. Эмансипация оформляется органом опеки (при согласии обоих родителей) либо через суд.'
+        desc: 'Несовершеннолетний, достигший 16 лет, может быть объявлен полностью дееспособным, если он работает по трудовому договору или с согласия родителей занимается предпринимательством.'
       }
     }),
     []
   );
 
-  // 5. Ловушки работодателей + закрытие модального окна по Escape
+  // 5. Ловушки работодателей
   const [activeTrap, setActiveTrap] = useState(null);
-
-  // Разделы Политики конфиденциальности сайта «ПравоПодростка 14–17»
-  const privacySections = useMemo(
-    () => [
-      {
-        num: '1',
-        title: 'Общие положения',
-        paragraphs: [
-          'Настоящая Политика конфиденциальности определяет порядок обработки и защиты информации пользователей сайта «ПравоПодростка 14–17» (далее — Сайт).',
-          'Сайт предназначен для предоставления несовершеннолетним информационных материалов об их трудовых и гражданских правах, а также для использования справочных инструментов и калькуляторов.',
-          'Главный принцип работы Сайта — минимизация сбора персональных данных. Для использования основных возможностей Сайта регистрация и создание личного кабинета не требуются.'
-        ]
-      },
-      {
-        num: '2',
-        title: 'Какие данные собираются',
-        paragraphs: [
-          'Сайт не предусматривает обязательного предоставления пользователями фамилии, имени, отчества, номера телефона, адреса проживания, паспортных данных и иных сведений, позволяющих установить личность пользователя.',
-          'При использовании Сайта:'
-        ],
-        bullets: [
-          'не требуется регистрация или создание учётной записи;',
-          'не предусмотрена обязательная передача контактных данных;',
-          'не осуществляется отправка введённых в конструктор документов сведений на сервер Сайта;',
-          'не требуется указывать реальные персональные данные для использования калькуляторов и справочных материалов.'
-        ],
-        afterParagraphs: [
-          'Пользователь самостоятельно решает, какие сведения вводить в поля конструктора документов. Рекомендуется использовать условные данные или образцы, не содержащие реальной персональной информации.'
-        ]
-      },
-      {
-        num: '3',
-        title: 'Использование локального хранилища',
-        paragraphs: [
-          'Для сохранения отметок в интерактивном чек-листе Сайт использует локальное хранилище браузера (localStorage).',
-          'В нём сохраняются только отметки о выполнении пунктов чек-листа. Эти сведения используются исключительно для отображения прогресса пользователя.',
-          'Пользователь может удалить сохранённые данные, очистив данные сайта в настройках своего браузера.'
-        ],
-        hasClearStorageAction: true
-      },
-      {
-        num: '4',
-        title: 'Работа конструктора документов и калькулятора',
-        paragraphs: [
-          'Встроенные калькуляторы выполняют расчёты непосредственно в браузере пользователя.',
-          'Конструктор документов позволяет сформировать текст типовых заявлений и согласий. Введённая информация обрабатывается на стороне устройства пользователя, а готовый документ скачивается в виде файла.',
-          'Сайт не предусматривает передачу введённых в конструктор сведений третьим лицам.',
-          'Пользователям рекомендуется не вводить реальные паспортные данные, адреса проживания, телефоны и другие сведения, которые не нужны для создания учебного или справочного документа.'
-        ]
-      },
-      {
-        num: '5',
-        title: 'Защита информации несовершеннолетних',
-        paragraphs: [
-          'Поскольку Сайт ориентирован на несовершеннолетних пользователей, особое внимание уделяется защите их частной жизни.',
-          'Администрация Сайта рекомендует:'
-        ],
-        bullets: [
-          'не размещать в открытом доступе личные данные;',
-          'не вводить сведения о документах, удостоверяющих личность;',
-          'не сообщать посторонним номера телефонов, домашние адреса и пароли;',
-          'использовать условные данные при заполнении образцов документов.'
-        ],
-        afterParagraphs: [
-          'Сайт не предназначен для сбора персональных данных несовершеннолетних и не требует их предоставления для получения доступа к основным материалам.'
-        ]
-      },
-      {
-        num: '6',
-        title: 'Передача информации третьим лицам',
-        paragraphs: [
-          'Сайт не предусматривает самостоятельную передачу введённых пользователями сведений третьим лицам в рекламных или коммерческих целях.',
-          'При этом техническая инфраструктура, на которой размещён Сайт, может обрабатывать техническую информацию, необходимую для его работы и обеспечения безопасности, в соответствии с правилами соответствующего хостинг-провайдера.'
-        ]
-      },
-      {
-        num: '7',
-        title: 'Файлы cookie и техническая информация',
-        paragraphs: [
-          'Для работы отдельных функций Сайт может использовать возможности браузера, включая локальное хранилище.',
-          'Такие данные помогают обеспечивать корректную работу интерфейса и сохранять выбранные пользователем отметки.',
-          'Сайт не заявляет об использовании рекламных cookie и систем аналитики для отслеживания поведения пользователей.'
-        ]
-      },
-      {
-        num: '8',
-        title: 'Права пользователей',
-        paragraphs: [
-          'Пользователь вправе самостоятельно прекратить использование Сайта, удалить сохранённые в браузере данные и не вводить в поля Сайта сведения, позволяющие установить его личность.',
-          'Если пользователь обнаружил проблему, связанную с конфиденциальностью, он может обратиться по контактному адресу, указанному в разделе контактов Сайта.'
-        ]
-      },
-      {
-        num: '9',
-        title: 'Изменение Политики конфиденциальности',
-        paragraphs: [
-          'Администрация Сайта вправе вносить изменения в настоящую Политику при изменении функциональности Сайта или требований законодательства.',
-          'Актуальная редакция Политики размещается на Сайте. Дата последнего обновления указывается в начале документа.'
-        ]
-      },
-      {
-        num: '10',
-        title: 'Контактная информация',
-        paragraphs: [
-          'По вопросам работы Сайта и конфиденциальности можно обратиться по адресу электронной почты:'
-        ],
-        hasContactEmail: true
-      }
-    ],
-    []
-  );
-
-  // Данные для секции «Почему этот сайт удобен» на главной странице
-  const convenienceFeatures = useMemo(
-    () => [
-      {
-        icon: Zap,
-        title: 'Вместо 400 страниц кодексов — один понятный алгоритм',
-        desc: 'Вам не нужно искать разрозненные статьи по Трудовому и Гражданскому кодексам РФ и высчитывать доли ставок вручную. Встроенный калькулятор сам сопоставляет ваш возраст, учебный период и график с федеральными лимитами за пару секунд.'
-      },
-      {
-        icon: Smartphone,
-        title: 'Удобно открыть прямо на собеседовании с телефона',
-        desc: 'Интерфейс адаптирован под экраны смартфонов и работает мгновенно. Если менеджер предлагает выйти на «бесплатную пробную смену» или обещает штрафы за опоздание, вы можете сразу открыть нужную статью закона прямо при разговоре.'
-      },
-      {
-        icon: FileText,
-        title: 'Готовые юридические бланки без помощи юриста',
-        desc: 'В конструкторе документов уже заложены точные формулировки и ссылки на статьи 16, 63, 67, 70 и 267 ТК РФ. Достаточно вписать ФИО и название организации — документ можно сразу скопировать, скачать в .txt или распечатать.'
-      },
-      {
-        icon: Users,
-        title: 'Полезен одновременно подросткам и их родителям',
-        desc: 'Родители часто переживают, не обманут ли ребенка на первой подработке. Навигатор наглядно показывает мамам и папам законные границы труда в 14–17 лет и помогает быстро оформить письменное согласие на трудоустройство.'
-      },
-      {
-        icon: BookOpen,
-        title: 'Живой человеческий язык без сложного канцелярита',
-        desc: 'Мы перевели сухие юридические конструкции на понятный язык повседневных ситуаций: работа бариста, курьером, промоутером, в пункте выдачи заказов, открытие молодежной карты или возврат бракованного товара в магазин.'
-      },
-      {
-        icon: Lock,
-        title: 'Полная конфиденциальность и доступ без регистрации',
-        desc: 'Для проверки вакансии или создания заявления не нужно создавать аккаунт, вводить номер телефона или паспортные данные. Все расчеты и генерация текстов происходят локально прямо в вашем браузере.'
-      }
-    ],
-    []
-  );
-
-  // Карточки аудитории и жизненных сценариев
-  const audienceScenarios = useMemo(
-    () => [
-      {
-        badge: 'Для подростков 14–17 лет',
-        title: 'Перед выходом на первую подработку',
-        text: 'Поможет заранее проверить объявление о вакансии, отличить честного работодателя от тех, кто экономит на школьниках с помощью «неоплачиваемых стажировок», и защитить свою первую зарплату.',
-        actionLabel: 'Проверить вакансию',
-        targetTab: 'calculator'
-      },
-      {
-        badge: 'Для родителей и опекунов',
-        title: 'Контроль безопасности и оформление согласия',
-        text: 'Позволит убедиться, что график смены не мешает учебе и не вредит здоровью ребенка, а также за одну минуту сформировать юридически грамотное письменное согласие по ч. 3 ст. 63 ТК РФ.',
-        actionLabel: 'Собрать согласие',
-        targetTab: 'documents'
-      },
-      {
-        badge: 'Для владельцев карт 14+',
-        title: 'Финансовая грамотность и защита от мошенников',
-        text: 'Объяснит, как самостоятельно распоряжаться своим заработком и банковским вкладом по ст. 26 ГК РФ и почему категорически нельзя передавать свою карту третьим лицам за вознаграждение.',
-        actionLabel: 'Открыть симулятор сделок',
-        targetTab: 'radar',
-        scrollToFinance: true
-      }
-    ],
-    []
-  );
-
-  // Подробный FAQ для главной страницы
-  const faqItems = useMemo(
-    () => [
-      {
-        q: 'Нужно ли согласие родителей, если мне уже исполнилось 16 лет?',
-        a: 'Нет. Согласно части 1 статьи 63 Трудового кодекса РФ, заключать трудовой договор самостоятельно гражданин вправе с 16 лет. Письменное согласие одного из родителей (попечителя) требуется только при трудоустройстве в 14 и 15 лет (для легкого труда в свободное от учебы время).'
-      },
-      {
-        q: 'Как должна оплачиваться работа несовершеннолетнего при сокращенной смене?',
-        a: 'В соответствии со статьей 271 ТК РФ при повременной оплате труда заработная плата работникам в возрасте до 18 лет выплачивается с учетом сокращенной продолжительности работы (пропорционально отработанному времени). При этом работодатель имеет право за счет собственных средств производить им доплаты до уровня оплаты труда работников соответствующих категорий при полной продолжительности ежедневной работы.'
-      },
-      {
-        q: 'Имеет ли право работодатель отправить меня на «пробную смену» бесплатно?',
-        a: 'Категорически нет. В Трудовом кодексе РФ отсутствует понятие «бесплатной стажировки» или «пробного дня без оплаты». По статье 16 и части 2 статьи 67 ТК РФ, как только вы приступили к работе с ведома или по поручению менеджера, трудовой договор считается заключенным, а каждый отработанный час подлежит обязательной оплате.'
-      },
-      {
-        q: 'Кто обязан оплачивать медицинский осмотр при устройстве на работу до 18 лет?',
-        a: 'Согласно статье 266 Трудового кодекса РФ лица в возрасте до 18 лет принимаются на работу только после предварительного обязательного медицинского осмотра. Все расходы на прохождение такого медосмотра (и оформление медицинской книжки, если она требуется для работы) оплачиваются исключительно за счет средств работодателя.'
-      },
-      {
-        q: 'Могут ли родители забрать деньги, которые подросток заработал сам?',
-        a: 'Нет. Подпункт 1 пункта 2 статьи 26 Гражданского кодекса РФ прямо закрепляет за несовершеннолетними в возрасте от 14 до 18 лет право самостоятельно, без согласия родителей, распоряжаться своими заработком, стипендией и иными собственными доходами, а также вносить вклады в кредитные организации и распоряжаться ими.'
-      }
-    ],
-    []
-  );
 
   useEffect(() => {
     if (!activeTrap) return;
@@ -1893,6 +2386,199 @@ export default function App() {
     []
   );
 
+  const privacySections = useMemo(
+    () => [
+      {
+        num: '1',
+        title: 'Общие положения',
+        paragraphs: [
+          'Настоящая Политика конфиденциальности определяет порядок обработки и защиты информации пользователей сайта «ПравоПодростка 14–17» (далее — Сайт).',
+          'Сайт предназначен для предоставления несовершеннолетним информационных материалов об их трудовых и гражданских правах, а также для использования справочных инструментов и калькуляторов.',
+          'Главный принцип работы Сайта — минимизация сбора персональных данных. Для использования основных возможностей Сайта регистрация и создание личного кабинета не требуются.'
+        ]
+      },
+      {
+        num: '2',
+        title: 'Какие данные собираются',
+        paragraphs: [
+          'Сайт не предусматривает обязательного предоставления пользователями фамилии, имени, отчества, номера телефона, адреса проживания, паспортных данных и иных сведений, позволяющих установить личность пользователя.',
+          'При использовании Сайта:'
+        ],
+        bullets: [
+          'не требуется регистрация или создание учётной записи;',
+          'не предусмотрена обязательная передача контактных данных;',
+          'не осуществляется отправка введённых в конструктор документов сведений на сервер Сайта;',
+          'не требуется указывать реальные персональные данные для использования калькуляторов и справочных материалов.'
+        ],
+        afterParagraphs: [
+          'Пользователь самостоятельно решает, какие сведения вводить в поля конструктора документов. Рекомендуется использовать условные данные или образцы, не содержащие реальной персональной информации.'
+        ]
+      },
+      {
+        num: '3',
+        title: 'Использование локального хранилища',
+        paragraphs: [
+          'Для сохранения отметок в интерактивном чек-листе Сайт использует локальное хранилище браузера (localStorage).',
+          'В нём сохраняются только отметки о выполнении пунктов чек-листа. Эти сведения используются исключительно для отображения прогресса пользователя.',
+          'Пользователь может удалить сохранённые данные, очистив данные сайта в настройках своего браузера.'
+        ],
+        hasClearStorageAction: true
+      },
+      {
+        num: '4',
+        title: 'Работа конструктора документов и калькулятора',
+        paragraphs: [
+          'Встроенные калькуляторы выполняют расчёты непосредственно в браузере пользователя.',
+          'Конструктор документов позволяет сформировать текст типовых заявлений и согласий. Введённая информация обрабатывается на стороне устройства пользователя, а готовый документ скачивается в виде файла.',
+          'Сайт не предусматривает передачу введённых в конструктор сведений третьим лицам.'
+        ]
+      },
+      {
+        num: '5',
+        title: 'Защита информации несовершеннолетних',
+        paragraphs: [
+          'Поскольку Сайт ориентирован на несовершеннолетних пользователей, особое внимание уделяется защите их частной жизни.',
+          'Администрация Сайта рекомендует:'
+        ],
+        bullets: [
+          'не размещать в открытом доступе личные данные;',
+          'не вводить сведения о документах, удостоверяющих личность;',
+          'не сообщать посторонним номера телефонов, домашние адреса и пароли;',
+          'использовать условные данные при заполнении образцов документов.'
+        ]
+      },
+      {
+        num: '6',
+        title: 'Передача информации третьим лицам',
+        paragraphs: [
+          'Сайт не предусматривает самостоятельную передачу введённых пользователями сведений третьим лицам в рекламных или коммерческих целях.',
+          'При этом техническая инфраструктура, на которой размещён Сайт, может обрабатывать техническую информацию, необходимую для его работы и обеспечения безопасности.'
+        ]
+      },
+      {
+        num: '7',
+        title: 'Файлы cookie и техническая информация',
+        paragraphs: [
+          'Для работы отдельных функций Сайт может использовать возможности браузера, включая локальное хранилище.',
+          'Сайт не заявляет об использовании рекламных cookie и систем аналитики для отслеживания поведения пользователей.'
+        ]
+      },
+      {
+        num: '8',
+        title: 'Права пользователей',
+        paragraphs: [
+          'Пользователь вправе самостоятельно прекратить использование Сайта, удалить сохранённые в браузере данные и не вводить в поля Сайта сведения, позволяющие установить его личность.'
+        ]
+      },
+      {
+        num: '9',
+        title: 'Изменение Политики конфиденциальности',
+        paragraphs: [
+          'Администрация Сайта вправе вносить изменения в настоящую Политику при изменении функциональности Сайта или требований законодательства.'
+        ]
+      },
+      {
+        num: '10',
+        title: 'Контактная информация',
+        paragraphs: [
+          'По вопросам работы Сайта и конфиденциальности можно обратиться по адресу электронной почты:'
+        ],
+        hasContactEmail: true
+      }
+    ],
+    []
+  );
+
+  const convenienceFeatures = useMemo(
+    () => [
+      {
+        icon: Zap,
+        title: 'Вместо 400 страниц кодексов — один понятный алгоритм',
+        desc: 'Встроенный калькулятор сам сопоставляет ваш возраст, учебный период и график с федеральными лимитами ТК РФ за пару секунд.'
+      },
+      {
+        icon: Smartphone,
+        title: 'Удобно открыть прямо на собеседовании с телефона',
+        desc: 'Если менеджер предлагает «бесплатную пробную смену» или штрафы, вы можете сразу открыть нужную статью закона прямо при разговоре.'
+      },
+      {
+        icon: FileText,
+        title: 'Готовые юридические бланки без помощи юриста',
+        desc: 'В конструкторе уже заложены точные формулировки и ссылки на статьи 16, 63, 67, 70 и 267 ТК РФ с выгрузкой в .txt и печатью.'
+      },
+      {
+        icon: Users,
+        title: 'Полезен одновременно подросткам и их родителям',
+        desc: 'Показывает родителям законные границы труда в 14–17 лет и помогает за минуту оформить письменное согласие на трудоустройство.'
+      },
+      {
+        icon: BookOpen,
+        title: 'Живой человеческий язык без сложного канцелярита',
+        desc: 'Разбираем реальные ситуации: работа бариста, курьером, в ПВЗ, оформление молодежной карты и возврат товара в магазин.'
+      },
+      {
+        icon: Lock,
+        title: 'Полная конфиденциальность и доступ без регистрации',
+        desc: 'Все расчеты и генерация документов происходят локально прямо в вашем браузере без создания аккаунта и ввода телефона.'
+      }
+    ],
+    []
+  );
+
+  const audienceScenarios = useMemo(
+    () => [
+      {
+        badge: 'Для подростков 14–17 лет',
+        title: 'Перед выходом на первую подработку',
+        text: 'Поможет заранее проверить объявление о вакансии, отличить честного работодателя от тех, кто экономит на школьниках, и защитить свою первую зарплату.',
+        actionLabel: 'Проверить вакансию',
+        targetTab: 'calculator'
+      },
+      {
+        badge: 'Для родителей и опекунов',
+        title: 'Контроль безопасности и оформление согласия',
+        text: 'Позволит убедиться, что график смены не мешает учебе, и за одну минуту сформировать письменное согласие по ч. 3 ст. 63 ТК РФ.',
+        actionLabel: 'Собрать согласие',
+        targetTab: 'documents'
+      },
+      {
+        badge: 'Для владельцев карт 14+',
+        title: 'Финансовая грамотность и защита от мошенников',
+        text: 'Объяснит, как самостоятельно распоряжаться своим заработком по ст. 26 ГК РФ и почему нельзя передавать свою карту третьим лицам.',
+        actionLabel: 'Открыть симулятор сделок',
+        targetTab: 'radar',
+        scrollToFinance: true
+      }
+    ],
+    []
+  );
+
+  const faqItems = useMemo(
+    () => [
+      {
+        q: 'Нужно ли согласие родителей, если мне уже исполнилось 16 лет?',
+        a: 'Нет. Согласно части 1 статьи 63 ТК РФ, заключать трудовой договор самостоятельно гражданин вправе с 16 лет. Согласие одного из родителей требуется только в 14 и 15 лет.'
+      },
+      {
+        q: 'Как должна оплачиваться работа несовершеннолетнего при сокращенной смене?',
+        a: 'По ст. 271 ТК РФ при повременной оплате зарплата выплачивается пропорционально отработанному времени, при этом работодатель вправе доплачивать до уровня полной ставки.'
+      },
+      {
+        q: 'Имеет ли право работодатель отправить меня на «пробную смену» бесплатно?',
+        a: 'Нет. По ст. 16 и ч. 2 ст. 67 ТК РФ, как только вы приступили к работе с ведома работодателя, трудовой договор считается заключенным, а каждый отработанный час подлежит оплате.'
+      },
+      {
+        q: 'Кто обязан оплачивать медицинский осмотр при устройстве на работу до 18 лет?',
+        a: 'Согласно ст. 266 ТК РФ обязательный предварительный медосмотр для лиц моложе 18 лет оплачивается исключительно за счет средств работодателя.'
+      },
+      {
+        q: 'Могут ли родители забрать деньги, которые подросток заработал сам?',
+        a: 'Нет. Подп. 1 п. 2 ст. 26 ГК РФ закрепляет за подростками 14–18 лет право самостоятельно распоряжаться своим заработком, стипендией и вкладами.'
+      }
+    ],
+    []
+  );
+
   const currentFinance = financeScenarios[financeScenario] || financeScenarios.card14;
 
   return (
@@ -1900,48 +2586,23 @@ export default function App() {
       style={{ fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}
       className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] flex flex-col relative antialiased"
     >
-      {/* ПОЛНОЭКРАННЫЙ ЖИВОЙ ФОН GRADIENTASCII В СВЕТЛОЙ ЭСТЕТИКЕ APPLE */}
-      <GradientASCII
-        colors={['#0071E3', '#0284C7', '#38BDF8', '#7DD3FC']}
-        shape="horizon"
-        characters=" =+xX0S8#@"
-        cellSize={18}
-        density={0.8}
-        glyphOpacity={0.5}
-        glow={0.2}
-        flicker={0.2}
-        softness={0.5}
-        scale={1}
-        flow={0.5}
-        speed={1}
-        gradientOpacity={0.9}
-        grain={0.08}
-        mouseInteraction={true}
-        scrambleRadius={0.1}
-        clickEffect="wave"
-        intro={true}
-        lightMode={true}
-      />
+      <style>{GLOBAL_STYLES}</style>
 
-      {/* ШАПКА В СТИЛЕ APPLE (МАТОВОЕ СТЕКЛО, ОДНА ЛИНИЯ НА ВСЮ ШИРИНУ) */}
+      {/* ПОЛНОЭКРАННЫЙ ЖИВОЙ ФОН GRADIENTASCII */}
+      <GradientASCII />
+
+      {/* ШАПКА В СТИЛЕ APPLE */}
       <header className="w-full bg-[#F5F5F7]/80 backdrop-blur-xl border-b border-black/[0.06] sticky top-0 z-40">
         <div className="w-full px-4 sm:px-8 lg:px-12 h-16 flex items-center justify-between gap-4 overflow-x-auto">
           <button
             type="button"
             onClick={() => navigateTo('overview')}
-            className="flex items-center gap-3 text-left shrink-0 cursor-pointer group"
+            className="brand-logo-btn flex items-center gap-3 text-left shrink-0 cursor-pointer group"
           >
-            <span className="bg-[#0071E3] text-white font-semibold text-xs px-2.5 py-1.5 rounded-xl tracking-tight shadow-2xs">
-              14–17
+            <BrandLogo />
+            <span className="hidden xl:inline text-xs font-medium text-[#6E6E73] border-l border-black/10 pl-3 whitespace-nowrap">
+              ТК РФ и ГК РФ
             </span>
-            <div className="flex items-baseline gap-2.5 whitespace-nowrap">
-              <span className="font-semibold text-lg sm:text-xl tracking-tight text-[#1D1D1F] group-hover:text-[#0071E3] transition-colors">
-                ПравоПодростка
-              </span>
-              <span className="hidden xl:inline text-xs font-medium text-[#6E6E73] border-l border-black/10 pl-2.5">
-                ТК РФ и ГК РФ
-              </span>
-            </div>
           </button>
 
           <nav className="flex items-center gap-1 bg-black/[0.045] p-1 rounded-full shrink-0 flex-nowrap">
@@ -1955,7 +2616,7 @@ export default function App() {
                   onClick={() => navigateTo(item.id)}
                   className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-white text-[#1D1D1F] font-semibold shadow-xs'
+                      ? 'bg-white text-[#1D1D1F] font-semibold shadow-sm'
                       : 'text-[#6E6E73] hover:text-[#1D1D1F]'
                   }`}
                 >
@@ -1970,12 +2631,10 @@ export default function App() {
 
       {/* ОСНОВНОЙ КОНТЕНТ */}
       <main className="relative z-10 flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        {/* =============================================================== */}
-        {/* ВКЛАДКА 1: ОБЗОР                                                */}
-        {/* =============================================================== */}
+        {/* ВКЛАДКА 1: ОБЗОР */}
         {activeTab === 'overview' && (
           <div className="space-y-12">
-            {/* ГЛАВНЫЙ ЭКРАН APPLE HERO БЕЗ ПЛИТОК */}
+            {/* ГЛАВНЫЙ ЭКРАН APPLE HERO */}
             <section className="relative py-4 sm:py-8 text-center">
               <div
                 className="pointer-events-none absolute inset-0 -z-10"
@@ -1986,31 +2645,11 @@ export default function App() {
               />
 
               <div className="max-w-5xl mx-auto">
-                <TechText
-                  text="ПРАВО 14–17"
-                  fontWeight={700}
-                  fontSize={195}
-                  dashLength={5}
-                  dashGap={2.5}
-                  specks={15}
-                  clickKick={true}
-                  letterSpacing={-0.04}
-                  accentColor="#0071E3"
-                  reach={210}
-                  softness={0.7}
-                  strokeWidth={1.8}
-                  speed={1}
-                  bounce={0.4}
-                  selection={true}
-                  labels={true}
-                  color="#1D1D1F"
-                  draggable={true}
-                  sweep={true}
-                />
+                <TechText text="ПРАВО 14–17" />
               </div>
 
               <div className="max-w-4xl mx-auto mt-1 px-2">
-                <div className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#0071E3] bg-white/85 backdrop-blur-md border border-black/[0.07] px-4 py-1.5 rounded-full mb-5 shadow-2xs">
+                <div className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#0071E3] bg-white/85 backdrop-blur-md border border-black/[0.07] px-4 py-1.5 rounded-full mb-5 shadow-sm">
                   <span>Глава 42 ТК РФ</span>
                   <span className="text-black/20">•</span>
                   <span>Статья 26 ГК РФ</span>
@@ -2030,7 +2669,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => navigateTo('calculator')}
-                    className="inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white font-medium px-7 py-3.5 rounded-full text-base sm:text-lg transition-all shadow-sm cursor-pointer"
+                    className="pp-btn inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white font-medium px-7 py-3.5 rounded-full text-base sm:text-lg shadow-sm cursor-pointer"
                   >
                     <span>Проверить вакансию</span>
                     <ArrowRight className="w-5 h-5" />
@@ -2038,7 +2677,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => navigateTo('documents')}
-                    className="inline-flex items-center gap-2 bg-white/90 hover:bg-white text-[#1D1D1F] border border-black/[0.08] font-medium px-7 py-3.5 rounded-full text-base sm:text-lg transition-all shadow-2xs cursor-pointer"
+                    className="pp-btn inline-flex items-center gap-2 bg-white/95 hover:bg-white text-[#1D1D1F] border border-black/[0.08] font-medium px-7 py-3.5 rounded-full text-base sm:text-lg shadow-sm cursor-pointer"
                   >
                     <span>Собрать документ</span>
                   </button>
@@ -2061,36 +2700,12 @@ export default function App() {
               </div>
             </section>
 
-            {/* ИНТЕРАКТИВНАЯ 3D-КАРУСЕЛЬ FLEXCAROUSEL */}
+            {/* 3D-КАРУСЕЛЬ */}
             <section className="relative z-10">
-              <FlexCarousel
-                items={carouselModules}
-                preset="liquid"
-                intro="rise"
-                cardHeight={0.5}
-                gap={12}
-                squeeze={0.2}
-                focusOnClick={true}
-                captions={true}
-                radius={0}
-                lensWidth={0.74}
-                lensHeight={1.18}
-                tilt={62}
-                roundness={1}
-                bend={0.34}
-                reach={0.38}
-                curl="twist"
-                dispersion={0.45}
-                liquid={0}
-                followCursor={false}
-                autoplay={false}
-                interval={4}
-                captureWheel={true}
-                onSelectModule={handleOpenCarouselModule}
-              />
+              <FlexCarousel items={carouselModules} onSelectModule={handleOpenCarouselModule} />
             </section>
 
-            {/* ПАНЕЛЬ КЛЮЧЕВЫХ ПОКАЗАТЕЛЕЙ НАВИГАТОРА */}
+            {/* КЛЮЧЕВЫЕ ПОКАЗАТЕЛИ */}
             <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 {
@@ -2116,7 +2731,7 @@ export default function App() {
               ].map((stat, idx) => (
                 <div
                   key={idx}
-                  className="bg-white/92 backdrop-blur-2xl rounded-[24px] border border-black/[0.06] p-5 sm:p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)]"
+                  className="bg-white/95 rounded-[24px] border border-black/[0.06] p-5 sm:p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)]"
                 >
                   <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0071E3] mb-1">
                     {stat.value}
@@ -2131,7 +2746,7 @@ export default function App() {
               ))}
             </section>
 
-            {/* КОМУ И В КАКИХ СИТУАЦИЯХ ПОМОГАЕТ НАВИГАТОР */}
+            {/* КОМУ ПОМОГАЕТ САЙТ */}
             <section className="space-y-5">
               <div className="px-1">
                 <div className="text-xs font-semibold uppercase tracking-wider text-[#0071E3] mb-1">
@@ -2146,7 +2761,7 @@ export default function App() {
                 {audienceScenarios.map((item, idx) => (
                   <div
                     key={idx}
-                    className="bg-white/92 backdrop-blur-2xl rounded-[28px] border border-black/[0.06] p-6 sm:p-7 shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col justify-between"
+                    className="bg-white/95 rounded-[28px] border border-black/[0.06] p-6 sm:p-7 shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col justify-between"
                   >
                     <div>
                       <span className="inline-block text-xs font-semibold text-[#0071E3] bg-[#0071E3]/[0.08] px-3 py-1 rounded-full mb-3.5">
@@ -2178,8 +2793,8 @@ export default function App() {
               </div>
             </section>
 
-            {/* ДОРОЖНАЯ КАРТА ВОЗРАСТОВ В СТИЛЕ APPLE BENTO */}
-            <section className="bg-white/92 backdrop-blur-2xl rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+            {/* ДОРОЖНАЯ КАРТА ВОЗРАСТОВ */}
+            <section className="bg-white/95 rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
               <div className="mb-6">
                 <div className="text-xs font-semibold uppercase tracking-wider text-[#0071E3] mb-1">
                   Возрастные рубежи
@@ -2192,7 +2807,6 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Мобильная вертикальная шкала без горизонтальной прокрутки */}
               <div className="md:hidden space-y-3.5">
                 {[
                   {
@@ -2244,7 +2858,6 @@ export default function App() {
                 ))}
               </div>
 
-              {/* Десктопная горизонтальная SVG-схема */}
               <div className="hidden md:block overflow-x-auto">
                 <svg viewBox="0 0 980 185" className="w-full h-auto block">
                   <line
@@ -2267,14 +2880,7 @@ export default function App() {
                   />
 
                   <circle cx="160" cy="42" r="19" fill="#0071E3" />
-                  <text
-                    x="160"
-                    y="47"
-                    textAnchor="middle"
-                    fill="#FFFFFF"
-                    fontSize="14"
-                    fontWeight="bold"
-                  >
+                  <text x="160" y="47" textAnchor="middle" fill="#FFFFFF" fontSize="14" fontWeight="bold">
                     14
                   </text>
                   <rect x="30" y="74" width="260" height="98" rx="16" fill="#F5F5F7" />
@@ -2292,14 +2898,7 @@ export default function App() {
                   </text>
 
                   <circle cx="490" cy="42" r="19" fill="#0071E3" />
-                  <text
-                    x="490"
-                    y="47"
-                    textAnchor="middle"
-                    fill="#FFFFFF"
-                    fontSize="14"
-                    fontWeight="bold"
-                  >
+                  <text x="490" y="47" textAnchor="middle" fill="#FFFFFF" fontSize="14" fontWeight="bold">
                     16
                   </text>
                   <rect x="360" y="74" width="260" height="98" rx="16" fill="#F5F5F7" />
@@ -2316,22 +2915,8 @@ export default function App() {
                     • До 4 ч/день в учебу, до 7 ч в каникулы
                   </text>
 
-                  <circle
-                    cx="820"
-                    cy="42"
-                    r="19"
-                    fill="#FFFFFF"
-                    stroke="#0071E3"
-                    strokeWidth="3"
-                  />
-                  <text
-                    x="820"
-                    y="47"
-                    textAnchor="middle"
-                    fill="#0071E3"
-                    fontSize="14"
-                    fontWeight="bold"
-                  >
+                  <circle cx="820" cy="42" r="19" fill="#FFFFFF" stroke="#0071E3" strokeWidth="3" />
+                  <text x="820" y="47" textAnchor="middle" fill="#0071E3" fontSize="14" fontWeight="bold">
                     18
                   </text>
                   <rect x="690" y="74" width="260" height="98" rx="16" fill="#F5F5F7" />
@@ -2351,8 +2936,8 @@ export default function App() {
               </div>
             </section>
 
-            {/* ИНТЕРАКТИВНЫЙ ЧЕК-ЛИСТ ПЕРЕД ВЫХОДОМ НА СМЕНУ */}
-            <section className="bg-white/92 backdrop-blur-2xl rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+            {/* ЧЕК-ЛИСТ БЕЗОПАСНОСТИ */}
+            <section className="bg-white/95 rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
               <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-wider text-[#0071E3] mb-1">
@@ -2371,7 +2956,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setChecklist([false, false, false, false, false])}
-                    className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-[#6E6E73] hover:text-[#1D1D1F] bg-[#F5F5F7] px-3.5 py-2 rounded-full cursor-pointer shrink-0"
+                    className="pp-btn inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-[#6E6E73] hover:text-[#1D1D1F] bg-[#F5F5F7] px-3.5 py-2 rounded-full cursor-pointer shrink-0"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>Сбросить отметки</span>
@@ -2425,20 +3010,15 @@ export default function App() {
               </div>
             </section>
 
-            {/* СЕКЦИЯ: ПОЧЕМУ ЭТОТ САЙТ УДОБЕН */}
-            <section className="bg-white/92 backdrop-blur-2xl rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+            {/* ПОЧЕМУ ЭТОТ САЙТ УДОБЕН */}
+            <section className="bg-white/95 rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
               <div className="max-w-3xl mb-8">
                 <div className="text-xs font-semibold uppercase tracking-wider text-[#0071E3] mb-1">
                   Преимущества платформы
                 </div>
                 <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight text-[#1D1D1F] mb-2.5">
-                  Почему этот навигатор удобнее обычных справочников и форумов
+                  Почему этот навигатор удобнее обычных справочников
                 </h2>
-                <p className="text-[#6E6E73] text-base sm:text-lg leading-relaxed">
-                  Официальные тексты кодексов написаны сложным юридическим языком, а советы в
-                  соцсетях часто устаревают. Мы объединили действующие нормы права в единый
-                  цифровой инструмент, который экономит время и защищает от ошибок.
-                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -2447,25 +3027,23 @@ export default function App() {
                   return (
                     <div
                       key={idx}
-                      className="rounded-3xl bg-[#F5F5F7]/85 border border-black/[0.04] p-6 flex flex-col justify-between transition-all hover:bg-[#F5F5F7]"
+                      className="rounded-3xl bg-[#F5F5F7]/85 border border-black/[0.04] p-6"
                     >
-                      <div>
-                        <div className="w-11 h-11 rounded-2xl bg-white text-[#0071E3] shadow-2xs flex items-center justify-center mb-4">
-                          <FeatIcon className="w-5 h-5" />
-                        </div>
-                        <h3 className="text-lg font-semibold tracking-tight text-[#1D1D1F] leading-snug mb-2">
-                          {feat.title}
-                        </h3>
-                        <p className="text-sm text-[#6E6E73] leading-relaxed">{feat.desc}</p>
+                      <div className="w-11 h-11 rounded-2xl bg-white text-[#0071E3] shadow-sm flex items-center justify-center mb-4">
+                        <FeatIcon className="w-5 h-5" />
                       </div>
+                      <h3 className="text-lg font-semibold tracking-tight text-[#1D1D1F] leading-snug mb-2">
+                        {feat.title}
+                      </h3>
+                      <p className="text-sm text-[#6E6E73] leading-relaxed">{feat.desc}</p>
                     </div>
                   );
                 })}
               </div>
             </section>
 
-            {/* ЧАСТЫЕ ВОПРОСЫ И ОТВЕТЫ (FAQ АККОРДЕОН) */}
-            <section className="bg-white/92 backdrop-blur-2xl rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+            {/* FAQ */}
+            <section className="bg-white/95 rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
               <div className="max-w-3xl mb-6">
                 <div className="text-xs font-semibold uppercase tracking-wider text-[#0071E3] mb-1">
                   База знаний
@@ -2473,10 +3051,6 @@ export default function App() {
                 <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1D1D1F] mb-1.5">
                   Частые вопросы о работе и деньгах до 18 лет
                 </h2>
-                <p className="text-sm sm:text-base text-[#6E6E73]">
-                  Подробные разборы самых спорных моментов, с которыми сталкиваются подростки и
-                  родители.
-                </p>
               </div>
 
               <div className="divide-y divide-black/[0.07] border-t border-b border-black/[0.07]">
@@ -2511,8 +3085,8 @@ export default function App() {
               </div>
             </section>
 
-            {/* ЧТО МЫ ХОТИМ ДОБАВИТЬ (ПЛАН РАЗВИТИЯ ПРОЕКТА) */}
-            <section className="bg-white/92 backdrop-blur-2xl rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+            {/* ЧТО МЫ ХОТИМ ДОБАВИТЬ (2 ЗАДАЧИ В СООТВЕТСТВИИ С ПОЛИТИКОЙ КОНФИДЕНЦИАЛЬНОСТИ) */}
+            <section className="bg-white/95 rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
               <div className="max-w-3xl mb-8">
                 <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#0071E3] bg-[#0071E3]/[0.08] px-3 py-1 rounded-full mb-2.5">
                   <Sparkles className="w-3.5 h-3.5" />
@@ -2522,42 +3096,16 @@ export default function App() {
                   Что мы хотим добавить в будущих обновлениях
                 </h2>
                 <p className="text-[#6E6E73] text-base sm:text-lg leading-relaxed">
-                  Мы продолжаем развивать «ПравоПодростка 14–17», чтобы сделать защиту прав
-                  несовершеннолетних еще быстрее и нагляднее. Вот ключевые функции, которые появятся
-                  в следующих версиях сайта:
+                  Мы продолжаем развивать «ПравоПодростка 14–17» с полным соблюдением нашей
+                  Политики конфиденциальности. Вот ключевые функции следующих версий:
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="rounded-3xl bg-[#F5F5F7]/90 border border-[#0071E3]/20 p-6 sm:p-7 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-4">
-                      <div className="w-11 h-11 rounded-2xl bg-[#0071E3] text-white shadow-2xs flex items-center justify-center">
-                        <Upload className="w-5 h-5" />
-                      </div>
-                      <span className="text-xs font-semibold text-[#0071E3] bg-[#0071E3]/10 px-3 py-1 rounded-full">
-                        В разработке
-                      </span>
-                    </div>
-                    <h3 className="text-lg sm:text-xl font-semibold tracking-tight text-[#1D1D1F] leading-snug mb-2.5">
-                      Загрузка своего трудового договора (фото или файл)
-                    </h3>
-                    <p className="text-sm text-[#6E6E73] leading-relaxed">
-                      Вы сможете загрузить фотографию, скан или текстовый файл (.pdf, .docx, .jpg)
-                      предложенного трудового договора прямо со смартфона. Алгоритм распознает
-                      текст и автоматически подсветит опасные пункты: скрытый испытательный срок,
-                      незаконные штрафы или превышение часов смены.
-                    </p>
-                  </div>
-                  <div className="mt-5 pt-4 border-t border-black/[0.06] text-xs font-medium text-[#0071E3]">
-                    Поддержка фото с камеры и файлов PDF / DOCX
-                  </div>
-                </div>
-
-                <div className="rounded-3xl bg-[#F5F5F7]/90 border border-[#0071E3]/20 p-6 sm:p-7 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-4">
-                      <div className="w-11 h-11 rounded-2xl bg-[#0071E3] text-white shadow-2xs flex items-center justify-center">
+                      <div className="w-11 h-11 rounded-2xl bg-[#0071E3] text-white shadow-sm flex items-center justify-center">
                         <ExternalLink className="w-5 h-5" />
                       </div>
                       <span className="text-xs font-semibold text-[#0071E3] bg-[#0071E3]/10 px-3 py-1 rounded-full">
@@ -2582,7 +3130,7 @@ export default function App() {
                 <div className="rounded-3xl bg-[#F5F5F7]/90 border border-black/[0.05] p-6 sm:p-7 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-4">
-                      <div className="w-11 h-11 rounded-2xl bg-white text-[#0071E3] shadow-2xs flex items-center justify-center">
+                      <div className="w-11 h-11 rounded-2xl bg-white text-[#0071E3] shadow-sm flex items-center justify-center">
                         <Shield className="w-5 h-5" />
                       </div>
                       <span className="text-xs font-semibold text-[#6E6E73] bg-black/[0.05] px-3 py-1 rounded-full">
@@ -2595,7 +3143,7 @@ export default function App() {
                     <p className="text-sm text-[#6E6E73] leading-relaxed">
                       Если работодатель отказывается оплачивать отработанные смены даже после
                       письменной претензии, сервис поможет пошагово сформировать официальное
-                      обращение в Государственную инспекцию труда (ГИТ) с приложением доказательств.
+                      обращение в Государственную инспекцию труда (ГИТ) прямо в браузере.
                     </p>
                   </div>
                   <div className="mt-5 pt-4 border-t border-black/[0.06] text-xs font-medium text-[#6E6E73]">
@@ -2605,7 +3153,7 @@ export default function App() {
               </div>
             </section>
 
-            {/* ФИНАЛЬНЫЙ БЛОК БЫСТРОГО СТАРТА */}
+            {/* ФИНАЛЬНЫЙ БЛОК */}
             <section className="bg-gradient-to-br from-[#0071E3] to-[#0284C7] text-white rounded-[28px] p-7 sm:p-11 shadow-[0_12px_32px_rgba(0,113,227,0.22)] flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               <div className="max-w-2xl">
                 <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider bg-white/15 px-3 py-1 rounded-full mb-3">
@@ -2617,7 +3165,7 @@ export default function App() {
                 </h2>
                 <p className="text-white/85 text-base sm:text-lg leading-relaxed">
                   Проверьте предложенный график и условия в калькуляторе прямо сейчас или изучите 5
-                  главных ловушек работодателей, чтобы не потерять заработанные деньги.
+                  главных ловушек работодателей.
                 </p>
               </div>
 
@@ -2625,7 +3173,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => navigateTo('calculator')}
-                  className="inline-flex items-center gap-2 bg-white text-[#0071E3] hover:bg-white/95 font-semibold px-6 py-3.5 rounded-full text-sm sm:text-base transition-all shadow-sm cursor-pointer"
+                  className="pp-btn inline-flex items-center gap-2 bg-white text-[#0071E3] hover:bg-white/95 font-semibold px-6 py-3.5 rounded-full text-sm sm:text-base shadow-sm cursor-pointer"
                 >
                   <span>Запустить калькулятор</span>
                   <ArrowRight className="w-4 h-4" />
@@ -2633,7 +3181,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => navigateTo('traps')}
-                  className="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white border border-white/25 font-medium px-6 py-3.5 rounded-full text-sm sm:text-base transition-all cursor-pointer"
+                  className="pp-btn inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white border border-white/25 font-medium px-6 py-3.5 rounded-full text-sm sm:text-base cursor-pointer"
                 >
                   <span>Ловушки работодателей</span>
                 </button>
@@ -2642,12 +3190,10 @@ export default function App() {
           </div>
         )}
 
-        {/* =============================================================== */}
-        {/* ВКЛАДКА 2: КАЛЬКУЛЯТОР ПОДРАБОТКИ                               */}
-        {/* =============================================================== */}
+        {/* ВКЛАДКА 2: КАЛЬКУЛЯТОР ПОДРАБОТКИ */}
         {activeTab === 'calculator' && (
           <div className="space-y-6">
-            <div className="bg-white/95 backdrop-blur-2xl rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+            <div className="bg-white/95 rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
               <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-wider text-[#0071E3] mb-1">
@@ -2657,8 +3203,8 @@ export default function App() {
                     Калькулятор законности условий подработки
                   </h2>
                   <p className="text-sm sm:text-base text-[#6E6E73]">
-                    Укажите ваш возраст, режим работы и условия работодателя — алгоритм проверит
-                    их по статьям 63, 70, 92, 94, 192, 265, 266 и 268 ТК РФ.
+                    Укажите ваш возраст, режим работы и условия работодателя — алгоритм проверит их
+                    по статьям 63, 70, 92, 94, 192, 265, 266 и 268 ТК РФ.
                   </p>
                 </div>
 
@@ -2669,14 +3215,14 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => applyCalcPreset('violation_demo')}
-                    className="text-xs font-medium bg-[#FFF5F5] text-[#D70015] border border-[#FF3B30]/20 px-3 py-1.5 rounded-full hover:bg-[#FF3B30]/10 transition-colors cursor-pointer"
+                    className="pp-btn text-xs font-medium bg-[#FFF5F5] text-[#D70015] border border-[#FF3B30]/20 px-3 py-1.5 rounded-full cursor-pointer"
                   >
                     16 лет • Учеба 6 ч + испытание
                   </button>
                   <button
                     type="button"
                     onClick={() => applyCalcPreset('ok_14')}
-                    className="text-xs font-medium bg-[#F2FBF5] text-[#1B873F] border border-[#34C759]/25 px-3 py-1.5 rounded-full hover:bg-[#34C759]/10 transition-colors cursor-pointer"
+                    className="pp-btn text-xs font-medium bg-[#F2FBF5] text-[#1B873F] border border-[#34C759]/25 px-3 py-1.5 rounded-full cursor-pointer"
                   >
                     14 лет • Каникулы 4 ч
                   </button>
@@ -2750,60 +3296,26 @@ export default function App() {
                     <div className="text-sm font-medium text-[#1D1D1F]">
                       5. Дополнительные условия работодателя:
                     </div>
-
-                    <label className="flex items-start gap-2.5 text-sm text-[#1D1D1F] cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={hasProbation}
-                        onChange={(e) => setHasProbation(e.target.checked)}
-                        className="mt-1 accent-[#0071E3]"
-                      />
-                      <span>Устанавливают испытательный срок или бесплатную стажировку</span>
-                    </label>
-
-                    <label className="flex items-start gap-2.5 text-sm text-[#1D1D1F] cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={hasNight}
-                        onChange={(e) => setHasNight(e.target.checked)}
-                        className="mt-1 accent-[#0071E3]"
-                      />
-                      <span>Есть ночные смены (с 22:00 до 06:00) или сверхурочные</span>
-                    </label>
-
-                    <label className="flex items-start gap-2.5 text-sm text-[#1D1D1F] cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={hasFine}
-                        onChange={(e) => setHasFine(e.target.checked)}
-                        className="mt-1 accent-[#0071E3]"
-                      />
-                      <span>Есть денежные штрафы за опоздания или бой посуды</span>
-                    </label>
-
-                    <label className="flex items-start gap-2.5 text-sm text-[#1D1D1F] cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={hasMed}
-                        onChange={(e) => setHasMed(e.target.checked)}
-                        className="mt-1 accent-[#0071E3]"
-                      />
-                      <span>Просят оплатить предварительный медосмотр за свой счет</span>
-                    </label>
-
-                    <label className="flex items-start gap-2.5 text-sm text-[#1D1D1F] cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={hasHeavy}
-                        onChange={(e) => setHasHeavy(e.target.checked)}
-                        className="mt-1 accent-[#0071E3]"
-                      />
-                      <span>Постоянный подъем тяжестей или продажа спиртного / табака</span>
-                    </label>
+                    {[
+                      [hasProbation, setHasProbation, 'Устанавливают испытательный срок или бесплатную стажировку'],
+                      [hasNight, setHasNight, 'Есть ночные смены (с 22:00 до 06:00) или сверхурочные'],
+                      [hasFine, setHasFine, 'Есть денежные штрафы за опоздания или бой посуды'],
+                      [hasMed, setHasMed, 'Просят оплатить предварительный медосмотр за свой счет'],
+                      [hasHeavy, setHasHeavy, 'Постоянный подъем тяжестей или продажа спиртного / табака']
+                    ].map(([val, setter, label], idx) => (
+                      <label key={idx} className="flex items-start gap-2.5 text-sm text-[#1D1D1F] cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={val}
+                          onChange={(e) => setter(e.target.checked)}
+                          className="mt-1 accent-[#0071E3]"
+                        />
+                        <span>{label}</span>
+                      </label>
+                    ))}
                   </div>
                 </div>
 
-                {/* Блок результата */}
                 <div className="lg:col-span-7">
                   {analysis.violations.length === 0 ? (
                     <div className="rounded-3xl p-6 sm:p-7 bg-[#F2FBF5] border border-[#34C759]/25">
@@ -2815,12 +3327,7 @@ export default function App() {
                         Для возраста <strong>{age} лет</strong> (
                         {period === 'holiday' ? 'период каникул' : 'учебное время'}) закон разрешает
                         работать до <strong>{analysis.maxShift} ч в день</strong> и до{' '}
-                        <strong>{analysis.maxWeek} ч в неделю</strong>. Нарушений в выбранных
-                        параметрах не обнаружено.
-                      </p>
-                      <p className="text-xs sm:text-sm text-[#6E6E73] mb-5">
-                        Перед выходом на первую смену подпишите письменный трудовой договор в двух
-                        экземплярах (ст. 67 ТК РФ).
+                        <strong>{analysis.maxWeek} ч в неделю</strong>.
                       </p>
                       {age <= 15 && (
                         <button
@@ -2829,7 +3336,7 @@ export default function App() {
                             setDocType('consent');
                             navigateTo('documents');
                           }}
-                          className="inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer"
+                          className="pp-btn inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer"
                         >
                           Оформить согласие родителей <ArrowRight className="w-4 h-4" />
                         </button>
@@ -2854,7 +3361,7 @@ export default function App() {
                           setDocType('internship');
                           navigateTo('documents');
                         }}
-                        className="inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer"
+                        className="pp-btn inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer"
                       >
                         Составить письменное требование <ArrowRight className="w-4 h-4" />
                       </button>
@@ -2864,8 +3371,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Таблица норм */}
-            <div className="bg-white/95 backdrop-blur-2xl rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+            <div className="bg-white/95 rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
               <h3 className="text-xl sm:text-2xl font-semibold tracking-tight text-[#1D1D1F] mb-1">
                 Справочная таблица предельного рабочего времени (ст. 92 и ст. 94 ТК РФ)
               </h3>
@@ -2876,21 +3382,11 @@ export default function App() {
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="bg-[#F5F5F7] text-left text-[#1D1D1F]">
-                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">
-                        Возраст работника
-                      </th>
-                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">
-                        Макс. в день (учеба)
-                      </th>
-                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">
-                        Макс. в неделю (учеба)
-                      </th>
-                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">
-                        Макс. в день (каникулы)
-                      </th>
-                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">
-                        Макс. в неделю (каникулы)
-                      </th>
+                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">Возраст</th>
+                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">В день (учеба)</th>
+                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">В неделю (учеба)</th>
+                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">В день (каникулы)</th>
+                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">В неделю (каникулы)</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-black/[0.06]">
@@ -2922,11 +3418,9 @@ export default function App() {
           </div>
         )}
 
-        {/* =============================================================== */}
-        {/* ВКЛАДКА 3: КОНСТРУКТОР ДОКУМЕНТОВ                               */}
-        {/* =============================================================== */}
+        {/* ВКЛАДКА 3: КОНСТРУКТОР ДОКУМЕНТОВ */}
         {activeTab === 'documents' && (
-          <div className="bg-white/95 backdrop-blur-2xl rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+          <div className="bg-white/95 rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
             <div className="text-xs font-semibold uppercase tracking-wider text-[#0071E3] mb-1">
               Генератор заявлений
             </div>
@@ -2935,7 +3429,7 @@ export default function App() {
             </h2>
             <p className="text-sm sm:text-base text-[#6E6E73] mb-7">
               Заполните поля слева — готовый шаблон документа со ссылками на Трудовой кодекс РФ
-              сформируется справа. Обработка происходит локально на вашем устройстве.
+              сформируется справа.
             </p>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -2947,7 +3441,7 @@ export default function App() {
                   <select
                     value={docType}
                     onChange={(e) => setDocType(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 text-sm"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white text-sm"
                   >
                     <option value="consent">
                       Письменное согласие родителя на работу в 14–15 лет (ч. 3 ст. 63 ТК РФ)
@@ -2970,7 +3464,7 @@ export default function App() {
                     value={docEmployer}
                     onChange={(e) => setDocEmployer(e.target.value)}
                     placeholder="ООО «Городская кофейня» / ИП Иванов И.И."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 text-sm"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white text-sm"
                   />
                 </div>
 
@@ -2989,7 +3483,7 @@ export default function App() {
                         ? 'Смирнова Ольга Викторовна'
                         : 'Смирнов Артем Андреевич'
                     }
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 text-sm"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white text-sm"
                   />
                 </div>
 
@@ -3012,7 +3506,7 @@ export default function App() {
                         ? '4 смены по 4 часа (итого 16 часов)'
                         : 'с 01 июля 2026 года'
                     }
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 text-sm"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white text-sm"
                   />
                 </div>
 
@@ -3026,7 +3520,7 @@ export default function App() {
                       value={docExtra1}
                       onChange={(e) => setDocExtra1(e.target.value)}
                       placeholder="курьер / бариста"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 text-sm"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white text-sm"
                     />
                   </div>
                   <div>
@@ -3037,21 +3531,9 @@ export default function App() {
                       type="date"
                       value={docDate}
                       onChange={(e) => setDocDate(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 text-sm"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white text-sm"
                     />
                   </div>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-[#F5F5F7] text-xs text-[#6E6E73] leading-relaxed">
-                  Введённые данные не отправляются на сервер. Рекомендуем использовать условные
-                  данные при создании справочного образца.{' '}
-                  <button
-                    type="button"
-                    onClick={() => navigateTo('privacy')}
-                    className="text-[#0071E3] font-semibold hover:underline cursor-pointer"
-                  >
-                    Политика конфиденциальности
-                  </button>
                 </div>
               </div>
 
@@ -3066,7 +3548,7 @@ export default function App() {
                     onClick={() =>
                       copyText(buildDocumentText(), 'Текст документа скопирован в буфер обмена')
                     }
-                    className="inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer shadow-2xs"
+                    className="pp-btn inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer shadow-sm"
                   >
                     <Copy className="w-4 h-4" />
                     <span>Скопировать текст</span>
@@ -3074,7 +3556,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={downloadTxt}
-                    className="inline-flex items-center gap-2 bg-[#F5F5F7] hover:bg-black/[0.08] text-[#1D1D1F] text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer"
+                    className="pp-btn inline-flex items-center gap-2 bg-[#F5F5F7] hover:bg-black/[0.08] text-[#1D1D1F] text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer"
                   >
                     <Download className="w-4 h-4 text-[#0071E3]" />
                     <span>Скачать (.txt)</span>
@@ -3082,7 +3564,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => window.print()}
-                    className="inline-flex items-center gap-2 bg-[#F5F5F7] hover:bg-black/[0.08] text-[#1D1D1F] text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer"
+                    className="pp-btn inline-flex items-center gap-2 bg-[#F5F5F7] hover:bg-black/[0.08] text-[#1D1D1F] text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer"
                   >
                     <Printer className="w-4 h-4 text-[#0071E3]" />
                     <span>Распечатать / PDF</span>
@@ -3093,12 +3575,10 @@ export default function App() {
           </div>
         )}
 
-        {/* =============================================================== */}
-        {/* ВКЛАДКА 4: ШКАЛА ПРАВ И ФИНАНСЫ (ГК РФ)                         */}
-        {/* =============================================================== */}
+        {/* ВКЛАДКА 4: ШКАЛА ПРАВ И ФИНАНСЫ */}
         {activeTab === 'radar' && (
           <div className="space-y-6">
-            <div className="bg-white/95 backdrop-blur-2xl rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+            <div className="bg-white/95 rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
               <div className="text-xs font-semibold uppercase tracking-wider text-[#0071E3] mb-1">
                 Гражданский кодекс РФ
               </div>
@@ -3106,8 +3586,7 @@ export default function App() {
                 Возрастной радар: права, финансы и ответственность
               </h2>
               <p className="text-sm sm:text-base text-[#6E6E73] mb-6">
-                Выберите возрастной рубеж, чтобы сравнить новые права по Гражданскому и Трудовому
-                кодексам РФ с юридической ответственностью.
+                Выберите возрастной рубеж, чтобы сравнить новые права и юридическую ответственность.
               </p>
 
               <div className="inline-flex gap-1.5 bg-[#F5F5F7] p-1 rounded-full mb-6">
@@ -3118,7 +3597,7 @@ export default function App() {
                     onClick={() => setSelectedAgeRadar(yr)}
                     className={`px-5 py-2 rounded-full text-sm font-semibold transition-all cursor-pointer ${
                       selectedAgeRadar === yr
-                        ? 'bg-white text-[#1D1D1F] shadow-xs'
+                        ? 'bg-white text-[#1D1D1F] shadow-sm'
                         : 'text-[#6E6E73] hover:text-[#1D1D1F]'
                     }`}
                   >
@@ -3160,10 +3639,9 @@ export default function App() {
               </div>
             </div>
 
-            {/* Симулятор финансовых сделок и банковских карт */}
             <div
               ref={financeSectionRef}
-              className="bg-white/95 backdrop-blur-2xl rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]"
+              className="bg-white/95 rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]"
             >
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-2xl bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center shrink-0">
@@ -3174,38 +3652,32 @@ export default function App() {
                 </h2>
               </div>
               <p className="text-sm sm:text-base text-[#6E6E73] mb-6">
-                Проверьте, когда подросток вправе распоряжаться деньгами и картой самостоятельно, а
-                когда требуется согласие родителей или возникает риск ответственности.
+                Проверьте, когда подросток вправе распоряжаться деньгами и картой самостоятельно.
               </p>
 
               <div className="max-w-2xl mb-6">
-                <label className="block text-sm font-medium mb-1.5 text-[#1D1D1F]">
-                  Выберите ситуацию:
-                </label>
                 <select
                   value={financeScenario}
                   onChange={(e) => setFinanceScenario(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071E3]/30 text-sm sm:text-base"
+                  className="w-full px-4 py-3 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white text-sm sm:text-base"
                 >
                   <option value="card14">
-                    1. Подросток в 14 лет открывает вклад в банке или молодежную карту на свое имя
+                    1. Подросток в 14 лет открывает вклад в банке или молодежную карту
                   </option>
                   <option value="own_money">
-                    2. Подросток в 15 лет покупает дорогой смартфон на деньги, заработанные летом
+                    2. Подросток в 15 лет покупает смартфон на деньги, заработанные летом
                   </option>
                   <option value="parent_money">
                     3. Подросток в 15 лет покупает ноутбук на крупную сумму, подаренную родителями
                   </option>
                   <option value="return_item">
-                    4. Подросток возвращает некачественный товар в магазин без участия родителей
+                    4. Подросток возвращает некачественный товар в магазин без родителей
                   </option>
                   <option value="dropper">
-                    5. Знакомый предлагает 3 000 ₽ за оформление карты и передачу ее реквизитов
-                    (дропперство)
+                    5. Знакомый предлагает 3 000 ₽ за передачу реквизитов карты (дропперство)
                   </option>
                   <option value="emancipation">
-                    6. Подросток в 16 лет официально работает по трудовому договору и оформляет
-                    эмансипацию
+                    6. Подросток в 16 лет официально работает и оформляет эмансипацию
                   </option>
                 </select>
               </div>
@@ -3213,8 +3685,8 @@ export default function App() {
               <div
                 className={`rounded-3xl p-6 sm:p-7 border ${
                   currentFinance.ok
-                    ? 'bg-[#F2FBF5] border-[#34C759]/25 text-[#1D1D1F]'
-                    : 'bg-[#FFF5F5] border-[#FF3B30]/20 text-[#1D1D1F]'
+                    ? 'bg-[#F2FBF5] border-[#34C759]/25'
+                    : 'bg-[#FFF5F5] border-[#FF3B30]/20'
                 }`}
               >
                 <div
@@ -3237,53 +3709,44 @@ export default function App() {
           </div>
         )}
 
-        {/* =============================================================== */}
-        {/* ВКЛАДКА 5: ЛОВУШКИ РАБОТОДАТЕЛЕЙ                               */}
-        {/* =============================================================== */}
+        {/* ВКЛАДКА 5: ЛОВУШКИ РАБОТОДАТЕЛЕЙ */}
         {activeTab === 'traps' && (
-          <div className="space-y-4">
-            <div className="bg-white/95 backdrop-blur-2xl rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)] mb-6">
-              <div className="text-xs font-semibold uppercase tracking-wider text-[#0071E3] mb-1">
-                Практика защиты прав
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[#1D1D1F] mb-1.5">
-                5 типичных уловок работодателей и готовые ответы
-              </h2>
-              <p className="text-sm sm:text-base text-[#6E6E73]">
-                Нажмите на любую ситуацию, чтобы открыть правовой разбор и скопировать
-                аргументированный ответ работодателю.
-              </p>
-            </div>
+          <div className="space-y-6">
+            <EmployerTrapsCrowdHero
+              onOpenClaim={() => {
+                setDocType('internship');
+                navigateTo('documents');
+              }}
+            />
 
-            {employerTraps.map((trap, idx) => (
-              <div
-                key={idx}
-                onClick={() => setActiveTrap(trap)}
-                className="bg-white/95 backdrop-blur-2xl rounded-2xl border border-black/[0.06] hover:border-[#0071E3]/40 p-5 sm:px-7 flex items-center justify-between gap-4 flex-wrap shadow-2xs transition-all cursor-pointer group"
-              >
-                <div>
-                  <div className="text-xs font-semibold text-[#FF3B30] mb-1">
-                    Нарушение №{idx + 1} • {trap.law}
+            <div className="space-y-3.5">
+              {employerTraps.map((trap, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setActiveTrap(trap)}
+                  className="bg-white/95 rounded-2xl border border-black/[0.06] hover:border-[#0071E3]/40 p-5 sm:px-7 flex items-center justify-between gap-4 flex-wrap shadow-sm transition-all cursor-pointer group"
+                >
+                  <div>
+                    <div className="text-xs font-semibold text-[#FF3B30] mb-1">
+                      Нарушение №{idx + 1} • {trap.law}
+                    </div>
+                    <h3 className="font-semibold text-base sm:text-lg text-[#1D1D1F] group-hover:text-[#0071E3] transition-colors">
+                      {trap.title}
+                    </h3>
                   </div>
-                  <h3 className="font-semibold text-base sm:text-lg text-[#1D1D1F] group-hover:text-[#0071E3] transition-colors">
-                    {trap.title}
-                  </h3>
+                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#0071E3] bg-[#F5F5F7] group-hover:bg-[#0071E3] group-hover:text-white px-4 py-2 rounded-full transition-colors">
+                    Открыть разбор <ArrowRight className="w-4 h-4" />
+                  </span>
                 </div>
-                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#0071E3] bg-[#F5F5F7] group-hover:bg-[#0071E3] group-hover:text-white px-4 py-2 rounded-full transition-colors">
-                  Открыть разбор <ArrowRight className="w-4 h-4" />
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
 
-        {/* =============================================================== */}
-        {/* ВКЛАДКА 6: ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ                          */}
-        {/* =============================================================== */}
+        {/* ВКЛАДКА 6: ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ */}
         {activeTab === 'privacy' && (
           <div className="space-y-6">
-            {/* Шапка документа */}
-            <section className="bg-white/95 backdrop-blur-2xl rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+            <section className="bg-white/95 rounded-[28px] border border-black/[0.06] p-6 sm:p-10 shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
               <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
                 <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#0071E3] bg-[#0071E3]/[0.08] px-3.5 py-1.5 rounded-full">
                   <ShieldCheck className="w-4 h-4" />
@@ -3301,44 +3764,36 @@ export default function App() {
                 сайта «ПравоПодростка 14–17»
               </p>
 
-              {/* Ключевые принципы в 3 карточках */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-2">
                 <div className="rounded-2xl bg-[#F5F5F7] p-4 flex items-start gap-3">
                   <Lock className="w-5 h-5 text-[#0071E3] shrink-0 mt-0.5" />
                   <div className="text-xs sm:text-sm">
                     <div className="font-semibold text-[#1D1D1F]">Без регистрации</div>
-                    <div className="text-[#6E6E73] mt-0.5">
-                      Не запрашиваем ФИО, телефон или паспорт
-                    </div>
+                    <div className="text-[#6E6E73] mt-0.5">Не запрашиваем ФИО, телефон или паспорт</div>
                   </div>
                 </div>
                 <div className="rounded-2xl bg-[#F5F5F7] p-4 flex items-start gap-3">
                   <Smartphone className="w-5 h-5 text-[#0071E3] shrink-0 mt-0.5" />
                   <div className="text-xs sm:text-sm">
                     <div className="font-semibold text-[#1D1D1F]">Локальная работа</div>
-                    <div className="text-[#6E6E73] mt-0.5">
-                      Расчеты и документы создаются в браузере
-                    </div>
+                    <div className="text-[#6E6E73] mt-0.5">Расчеты и документы создаются в браузере</div>
                   </div>
                 </div>
                 <div className="rounded-2xl bg-[#F5F5F7] p-4 flex items-start gap-3">
                   <Shield className="w-5 h-5 text-[#0071E3] shrink-0 mt-0.5" />
                   <div className="text-xs sm:text-sm">
                     <div className="font-semibold text-[#1D1D1F]">Без рекламных трекеров</div>
-                    <div className="text-[#6E6E73] mt-0.5">
-                      Не передаем сведения третьим лицам
-                    </div>
+                    <div className="text-[#6E6E73] mt-0.5">Не передаем сведения третьим лицам</div>
                   </div>
                 </div>
               </div>
             </section>
 
-            {/* 10 разделов Политики конфиденциальности */}
             <section className="space-y-4">
               {privacySections.map((sec) => (
                 <article
                   key={sec.num}
-                  className="bg-white/95 backdrop-blur-2xl rounded-[24px] border border-black/[0.06] p-6 sm:p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)]"
+                  className="bg-white/95 rounded-[24px] border border-black/[0.06] p-6 sm:p-8 shadow-[0_4px_20px_rgba(0,0,0,0.03)]"
                 >
                   <div className="flex items-center gap-3 mb-3.5">
                     <span className="w-8 h-8 rounded-full bg-[#0071E3]/10 text-[#0071E3] font-semibold text-sm flex items-center justify-center shrink-0">
@@ -3353,7 +3808,6 @@ export default function App() {
                     {sec.paragraphs.map((p, pIdx) => (
                       <p key={pIdx}>{p}</p>
                     ))}
-
                     {sec.bullets && (
                       <ul className="space-y-2 my-3 pl-5 list-disc text-[#1D1D1F]/90">
                         {sec.bullets.map((b, bIdx) => (
@@ -3361,16 +3815,15 @@ export default function App() {
                         ))}
                       </ul>
                     )}
-
                     {sec.afterParagraphs &&
                       sec.afterParagraphs.map((ap, apIdx) => <p key={apIdx}>{ap}</p>)}
 
                     {sec.hasClearStorageAction && (
-                      <div className="pt-2 flex flex-wrap items-center gap-3">
+                      <div className="pt-2">
                         <button
                           type="button"
                           onClick={clearLocalStorageData}
-                          className="inline-flex items-center gap-2 bg-[#F5F5F7] hover:bg-black/[0.08] text-[#1D1D1F] text-xs sm:text-sm font-medium px-4 py-2 rounded-full transition-colors cursor-pointer"
+                          className="pp-btn inline-flex items-center gap-2 bg-[#F5F5F7] hover:bg-black/[0.08] text-[#1D1D1F] text-xs sm:text-sm font-medium px-4 py-2 rounded-full cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5 text-[#0071E3]" />
                           <span>Очистить сохранённые отметки чек-листа</span>
@@ -3389,10 +3842,8 @@ export default function App() {
                         </a>
                         <button
                           type="button"
-                          onClick={() =>
-                            copyText(SUPPORT_EMAIL, 'Адрес электронной почты скопирован')
-                          }
-                          className="inline-flex items-center gap-1.5 bg-[#F5F5F7] hover:bg-black/[0.08] text-[#1D1D1F] text-xs sm:text-sm font-medium px-4 py-2.5 rounded-full transition-colors cursor-pointer"
+                          onClick={() => copyText(SUPPORT_EMAIL, 'Адрес электронной почты скопирован')}
+                          className="pp-btn inline-flex items-center gap-1.5 bg-[#F5F5F7] hover:bg-black/[0.08] text-[#1D1D1F] text-xs sm:text-sm font-medium px-4 py-2.5 rounded-full cursor-pointer"
                         >
                           <Copy className="w-3.5 h-3.5" />
                           <span>Скопировать адрес</span>
@@ -3404,18 +3855,16 @@ export default function App() {
               ))}
             </section>
 
-            {/* Заключительное подтверждение и кнопки навигации */}
-            <section className="bg-white/95 backdrop-blur-2xl rounded-[28px] border border-[#0071E3]/20 p-6 sm:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <section className="bg-white/95 rounded-[28px] border border-[#0071E3]/20 p-6 sm:p-8 shadow-[0_4px_24px_rgba(0,0,0,0.04)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <p className="text-sm sm:text-base font-medium text-[#1D1D1F] leading-relaxed">
                 Используя Сайт «ПравоПодростка 14–17», пользователь подтверждает, что ознакомился с
                 настоящей Политикой конфиденциальности.
               </p>
-
               <div className="flex flex-wrap gap-2.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="inline-flex items-center gap-2 bg-[#F5F5F7] hover:bg-black/[0.08] text-[#1D1D1F] text-sm font-medium px-4 py-2.5 rounded-full cursor-pointer"
+                  className="pp-btn inline-flex items-center gap-2 bg-[#F5F5F7] hover:bg-black/[0.08] text-[#1D1D1F] text-sm font-medium px-4 py-2.5 rounded-full cursor-pointer"
                 >
                   <Printer className="w-4 h-4 text-[#0071E3]" />
                   <span>Печать / PDF</span>
@@ -3423,7 +3872,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => navigateTo('overview')}
-                  className="inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer"
+                  className="pp-btn inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   <span>На главную</span>
@@ -3433,80 +3882,37 @@ export default function App() {
           </div>
         )}
 
-        {/* =============================================================== */}
-        {/* СТРАНИЦА 404: ТАКОЙ СТАТЬИ В ЗАКОНЕ НЕТ                         */}
-        {/* =============================================================== */}
+        {/* СТРАНИЦА 404 */}
         {activeTab === '404' && (
           <div className="space-y-10 py-4 sm:py-8">
-            <section className="relative text-center">
-              <div
-                className="pointer-events-none absolute inset-0 -z-10"
-                style={{
-                  background:
-                    'radial-gradient(ellipse 75% 65% at 50% 48%, rgba(245, 245, 247, 0.92) 0%, rgba(245, 245, 247, 0.5) 65%, rgba(245, 245, 247, 0) 100%)'
-                }}
-              />
-
-              <div className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#0071E3] bg-white/90 backdrop-blur-md border border-black/[0.07] px-4 py-1.5 rounded-full mb-2 shadow-2xs">
+            <section className="text-center">
+              <div className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#0071E3] bg-white/90 border border-black/[0.07] px-4 py-1.5 rounded-full mb-2">
                 <span>Ошибка 404</span>
                 <span className="text-black/20">•</span>
                 <span>Статья не найдена</span>
               </div>
-
               <div className="max-w-4xl mx-auto">
-                <TechText
-                  text="404"
-                  fontWeight={700}
-                  fontSize={240}
-                  dashLength={6}
-                  dashGap={3}
-                  specks={18}
-                  clickKick={true}
-                  letterSpacing={0.02}
-                  accentColor="#0071E3"
-                  reach={230}
-                  softness={0.7}
-                  strokeWidth={2}
-                  speed={1}
-                  bounce={0.5}
-                  selection={true}
-                  labels={true}
-                  color="#1D1D1F"
-                  draggable={true}
-                  sweep={true}
-                />
+                <TechText text="404" fontSize={230} />
               </div>
-
-              <div className="max-w-2xl mx-auto px-2 -mt-2">
-                <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-[#1D1D1F] leading-tight mb-4">
+              <div className="max-w-xl mx-auto">
+                <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-[#1D1D1F] mb-4">
                   Такой статьи в законе нет.
                 </h1>
-                <p className="text-[#6E6E73] text-base sm:text-xl leading-relaxed mb-8">
-                  Похоже, эта страница не существует или была перенесена. Если работодатель
-                  ссылается на несуществующее правило — проверьте его в нашем навигаторе.
+                <p className="text-[#6E6E73] text-base sm:text-xl mb-8">
+                  Похоже, эта страница не существует. Вернитесь на главную или проверьте вакансию в
+                  калькуляторе.
                 </p>
-
-                <div className="flex flex-wrap items-center justify-center gap-3.5">
-                  <button
-                    type="button"
-                    onClick={() => navigateTo('overview')}
-                    className="inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white font-medium px-7 py-3.5 rounded-full text-base transition-all shadow-sm cursor-pointer"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Вернуться на главную</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigateTo('calculator')}
-                    className="inline-flex items-center gap-2 bg-white/90 hover:bg-white text-[#1D1D1F] border border-black/[0.08] font-medium px-7 py-3.5 rounded-full text-base transition-all shadow-2xs cursor-pointer"
-                  >
-                    <span>Проверить вакансию</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => navigateTo('overview')}
+                  className="pp-btn inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white font-medium px-7 py-3.5 rounded-full text-base shadow-sm cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Вернуться на главную</span>
+                </button>
               </div>
             </section>
 
-            {/* Быстрый переход к основным разделам навигатора */}
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 {
@@ -3540,7 +3946,7 @@ export default function App() {
                     key={card.id}
                     type="button"
                     onClick={() => navigateTo(card.id)}
-                    className="text-left bg-white/92 backdrop-blur-2xl rounded-3xl border border-black/[0.06] hover:border-[#0071E3]/40 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all cursor-pointer group"
+                    className="text-left bg-white/95 rounded-3xl border border-black/[0.06] hover:border-[#0071E3]/40 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] transition-all cursor-pointer group"
                   >
                     <div className="w-9 h-9 rounded-2xl bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center mb-3 group-hover:bg-[#0071E3] group-hover:text-white transition-colors">
                       <CardIcon className="w-4 h-4" />
@@ -3557,7 +3963,7 @@ export default function App() {
         )}
       </main>
 
-      {/* ВСПЛЫВАЮЩЕЕ МОДАЛЬНОЕ ОКНО В СТИЛЕ APPLE SHEET */}
+      {/* МОДАЛЬНОЕ ОКНО РАЗБОРА ЛОВУШКИ */}
       {activeTrap && (
         <div
           onClick={(e) => {
@@ -3565,7 +3971,7 @@ export default function App() {
           }}
           className="fixed inset-0 bg-black/35 backdrop-blur-md z-50 flex items-center justify-center p-4"
         >
-          <div className="bg-white/95 backdrop-blur-2xl rounded-[28px] border border-black/[0.08] max-w-2xl w-full p-6 sm:p-9 shadow-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-[28px] border border-black/[0.08] max-w-2xl w-full p-6 sm:p-9 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between gap-4 mb-4">
               <div>
                 <span className="text-xs font-semibold text-[#0071E3]">
@@ -3600,7 +4006,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => copyText(activeTrap.reply, 'Формулировка ответа скопирована')}
-                className="inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer"
+                className="inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer transition-colors"
               >
                 <Copy className="w-4 h-4" />
                 <span>Скопировать ответ</span>
@@ -3612,7 +4018,7 @@ export default function App() {
                   setDocType('internship');
                   navigateTo('documents');
                 }}
-                className="inline-flex items-center gap-2 bg-[#F5F5F7] hover:bg-black/[0.08] text-[#1D1D1F] text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer"
+                className="inline-flex items-center gap-2 bg-[#F5F5F7] hover:bg-black/[0.08] text-[#1D1D1F] text-sm font-medium px-5 py-2.5 rounded-full cursor-pointer transition-colors"
               >
                 <FileText className="w-4 h-4 text-[#0071E3]" />
                 <span>Перейти в конструктор претензий</span>
@@ -3622,28 +4028,77 @@ export default function App() {
         </div>
       )}
 
+      {/* ВИДЖЕТ «ЧТО НОВОГО» СПРАВА СНИЗУ */}
+      <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-3">
+        {showChangelog && (
+          <div className="w-[320px] sm:w-[360px] bg-white/95 backdrop-blur-2xl rounded-3xl border border-black/[0.08] shadow-2xl p-5 max-h-[70vh] overflow-y-auto">
+            <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-black/[0.07]">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#0071E3]" />
+                <span className="font-semibold text-sm text-[#1D1D1F]">
+                  Что нового с запуска сайта
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowChangelog(false)}
+                className="w-7 h-7 rounded-full bg-[#F5F5F7] hover:bg-black/10 flex items-center justify-center text-[#1D1D1F] cursor-pointer"
+                aria-label="Закрыть обновления"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5">
+              {CHANGELOG_ITEMS.map((item, idx) => (
+                <div key={idx} className="text-xs sm:text-sm">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-[11px] font-semibold text-[#0071E3] bg-[#0071E3]/[0.09] px-2 py-0.5 rounded-full">
+                      {item.date}
+                    </span>
+                  </div>
+                  <div className="font-semibold text-[#1D1D1F] mt-1">{item.title}</div>
+                  <div className="text-xs text-[#6E6E73] leading-relaxed mt-0.5">{item.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setShowChangelog((v) => !v)}
+          className="pp-btn inline-flex items-center gap-2 bg-white/95 backdrop-blur-xl border border-black/[0.08] text-[#1D1D1F] hover:border-[#0071E3]/40 text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-full shadow-lg cursor-pointer"
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0071E3] opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0071E3]" />
+          </span>
+          <Bell className="w-4 h-4 text-[#0071E3]" />
+          <span>Что нового</span>
+        </button>
+      </div>
+
       {/* ВСПЛЫВАЮЩЕЕ УВЕДОМЛЕНИЕ */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#1D1D1F]/95 backdrop-blur-md text-white px-5 py-3 rounded-full shadow-xl flex items-center gap-2 text-sm font-medium">
+        <div className="fixed bottom-20 right-5 z-50 bg-[#1D1D1F]/95 backdrop-blur-md text-white px-5 py-3 rounded-full shadow-xl flex items-center gap-2 text-sm font-medium">
           <Check className="w-4 h-4 text-[#38BDF8]" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* ПОЛНОЦЕННЫЙ ПОДВАЛ САЙТА */}
+      {/* ПОДВАЛ САЙТА */}
       <footer className="relative z-10 bg-[#F5F5F7]/95 backdrop-blur-xl border-t border-black/[0.08] text-[#6E6E73]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pb-10 border-b border-black/[0.07]">
-            {/* Колонка 1: О сайте */}
             <div className="md:col-span-5 space-y-3">
-              <div className="flex items-center gap-2.5">
-                <span className="bg-[#0071E3] text-white font-semibold text-xs px-2.5 py-1 rounded-lg">
-                  14–17
-                </span>
-                <span className="font-semibold text-lg tracking-tight text-[#1D1D1F]">
-                  ПравоПодростка
-                </span>
-              </div>
+              <button
+                type="button"
+                onClick={() => navigateTo('overview')}
+                className="brand-logo-btn text-left cursor-pointer group"
+              >
+                <BrandLogo compact />
+              </button>
               <p className="text-sm text-[#6E6E73] leading-relaxed max-w-md">
                 Интерактивный веб-навигатор по трудовым и гражданским правам несовершеннолетних на
                 основе главы 42 Трудового кодекса РФ и статьи 26 Гражданского кодекса РФ.
@@ -3657,7 +4112,6 @@ export default function App() {
               </p>
             </div>
 
-            {/* Колонка 2: Разделы навигатора */}
             <div className="md:col-span-3 space-y-2.5">
               <div className="text-xs font-semibold uppercase tracking-wider text-[#1D1D1F]">
                 Разделы сайта
@@ -3690,14 +4144,12 @@ export default function App() {
               </ul>
             </div>
 
-            {/* Колонка 3: Поддержка и контакты */}
             <div className="md:col-span-4 space-y-3">
               <div className="text-xs font-semibold uppercase tracking-wider text-[#1D1D1F]">
                 Поддержка и контакты
               </div>
               <p className="text-sm text-[#6E6E73]">
-                Есть вопрос по работе навигатора или конфиденциальности? Отправьте письмо в
-                почтовом клиенте на адрес поддержки:
+                Есть вопрос по работе навигатора или конфиденциальности? Напишите на почту:
               </p>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -3740,7 +4192,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Нижняя строка копирайта */}
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#86868B]">
             <div>© 2026 ПравоПодростка 14–17. Все права защищены.</div>
             <div className="flex flex-wrap items-center gap-4">
