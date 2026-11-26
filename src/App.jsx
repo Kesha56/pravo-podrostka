@@ -652,7 +652,7 @@ function TechText({
     let isInViewport = true;
     let isMounted = true;
 
-    const canvasFontFamily = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+    const canvasFontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif";
 
     const buildLayout = () => {
       if (!isMounted) return;
@@ -864,18 +864,26 @@ function TechText({
         ctx.textAlign = 'center';
         ctx.textBaseline = 'alphabetic';
 
-        ctx.fillStyle = isHovered ? 'rgba(0, 113, 227, 0.14)' : 'rgba(255, 255, 255, 0.8)';
+        const outerStrokeW = (isHovered ? strokeWidth + 0.7 : strokeWidth) * 1.9;
         ctx.setLineDash([dashLength, dashGap]);
-        ctx.lineWidth = isHovered ? strokeWidth + 0.7 : strokeWidth;
+        ctx.lineWidth = outerStrokeW;
         ctx.strokeStyle = isHovered ? accentColor : color;
+        ctx.lineJoin = 'round';
         ctx.shadowColor = isHovered ? 'rgba(0, 113, 227, 0.25)' : 'rgba(15, 23, 42, 0.08)';
         ctx.shadowBlur = isHovered ? 12 : 6;
 
+        // Сначала рисуем пунктирный контур, затем плотную заливку поверх,
+        // чтобы полностью скрыть внутренние пересечения штрихов в буквах (Р, А, 4)
         if (l.isDash) {
-          drawDashShape(l, true, true);
+          drawDashShape(l, false, true);
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = isHovered ? '#EBF5FF' : '#FFFFFF';
+          drawDashShape(l, true, false);
         } else {
-          ctx.fillText(l.ch, 0, 0);
           ctx.strokeText(l.ch, 0, 0);
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = isHovered ? '#EBF5FF' : '#FFFFFF';
+          ctx.fillText(l.ch, 0, 0);
         }
 
         if (sweep) {
@@ -884,9 +892,17 @@ function TechText({
           if (distSweep < 0.14) {
             const alpha = (1 - distSweep / 0.14) * 0.85;
             ctx.setLineDash([]);
+            ctx.lineWidth = outerStrokeW;
             ctx.strokeStyle = `rgba(0, 113, 227, ${alpha.toFixed(3)})`;
-            if (l.isDash) drawDashShape(l, false, true);
-            else ctx.strokeText(l.ch, 0, 0);
+            if (l.isDash) {
+              drawDashShape(l, false, true);
+              ctx.fillStyle = isHovered ? '#EBF5FF' : '#FFFFFF';
+              drawDashShape(l, true, false);
+            } else {
+              ctx.strokeText(l.ch, 0, 0);
+              ctx.fillStyle = isHovered ? '#EBF5FF' : '#FFFFFF';
+              ctx.fillText(l.ch, 0, 0);
+            }
           }
         }
 
@@ -1064,101 +1080,101 @@ function FlexCarousel({ items = [], onSelectModule }) {
       if (settled) s.currentPos = s.targetIndex;
 
       const isMobile = containerWidth < 640;
-      const baseCardW = isMobile ? Math.min(280, containerWidth - 44) : 335;
-      const spacingBase = baseCardW * 0.8 + 14;
+  const cardHeightPx = isMobile ? 378 : 386;
+  const cardWidthPx = isMobile ? Math.min(290, containerWidth - 40) : 340;
+  const activeItem = items[activeIndex] || items[0];
 
-      for (let i = 0; i < count; i++) {
-        const cardEl = cardRefs.current[i];
-        if (!cardEl) continue;
+  return (
+    <div
+      ref={wrapperRef}
+      onMouseDown={handlePointerDown}
+      onMouseMove={handlePointerMove}
+      onMouseUp={handlePointerUp}
+      onMouseLeave={handlePointerUp}
+      onTouchStart={handlePointerDown}
+      onTouchMove={handlePointerMove}
+      onTouchEnd={handlePointerUp}
+      className="w-full relative select-none overflow-hidden flex flex-col items-center justify-center py-4 cursor-grab active:cursor-grabbing"
+    >
+      <div
+        style={{ height: `${cardHeightPx + 24}px`, perspective: '1300px' }}
+        className="w-full relative flex items-center justify-center"
+      >
+        {items.map((item, idx) => {
+          const IconComponent = item.icon || Shield;
+          const isCenter = idx === activeIndex;
+          return (
+            <div
+              key={item.id || idx}
+              ref={(el) => {
+                cardRefs.current[idx] = el;
+              }}
+              onClick={() => handleCardClick(idx, item)}
+              style={{
+                width: `${cardWidthPx}px`,
+                height: `${cardHeightPx}px`,
+                borderRadius: '24px',
+                backfaceVisibility: 'hidden',
+                WebkitFontSmoothing: 'antialiased'
+              }}
+              className={`absolute bg-white border p-5 sm:p-6 overflow-hidden flex flex-col justify-between cursor-pointer transition-colors ${
+                isCenter ? 'border-[#0071E3]/25' : 'border-black/[0.08]'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="inline-flex items-center gap-2">
+                    <span className="w-7 h-7 rounded-xl bg-[#0071E3]/[0.1] text-[#0071E3] flex items-center justify-center shrink-0">
+                      <IconComponent className="w-3.5 h-3.5" />
+                    </span>
+                    <span className="text-xs font-semibold text-[#0071E3]">{item.badge}</span>
+                  </div>
+                  <span className="text-xs font-mono font-semibold text-[#86868B]">
+                    0{idx + 1} / 0{count}
+                  </span>
+                </div>
 
-        let delta = i - s.currentPos;
-        while (delta > count / 2) delta -= count;
-        while (delta < -count / 2) delta += count;
+                <h3 className="text-lg sm:text-xl font-semibold tracking-tight text-[#1D1D1F] leading-snug mb-2">
+                  {item.title}
+                </h3>
 
-        const absD = Math.abs(delta);
-        const sign = delta === 0 ? 0 : delta > 0 ? 1 : -1;
+                <p className="text-xs sm:text-sm text-[#6E6E73] leading-relaxed mb-3">{item.description}</p>
 
-        const opacity = Math.max(0.38, 1 - Math.max(0, absD - 1.25) * 0.42);
-        const zIndex = Math.round(50 - absD * 10);
+                <ul className="space-y-1.5 text-xs sm:text-sm text-[#1D1D1F]/85">
+                  {item.highlights.map((hl, hIdx) => (
+                    <li key={hIdx} className="flex items-start gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#0071E3] shrink-0 mt-1.5" />
+                      <span className="leading-snug">{hl}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-        if (settled && absD < 0.005) {
-          cardEl.style.transform = 'none';
-          cardEl.style.boxShadow =
-            '0 22px 48px -12px rgba(0, 113, 227, 0.16), 0 10px 24px -8px rgba(15, 23, 42, 0.08)';
-        } else {
-          const tx = Math.round(delta * spacingBase);
-          const ty = Math.round(Math.pow(absD, 1.55) * 14);
-          const scale = Math.max(0.76, 1 - absD * 0.11);
-          const rotY = -sign * Math.min(34, absD * 22);
-          const rotZ = sign * Math.min(5, absD * 2.4);
-          cardEl.style.transform = `translate3d(${tx}px, ${ty}px, 0px) rotateY(${rotY.toFixed(
-            1
-          )}deg) rotateZ(${rotZ.toFixed(1)}deg) scale(${scale.toFixed(3)})`;
-          cardEl.style.boxShadow =
-            absD < 0.35
-              ? '0 22px 48px -12px rgba(0, 113, 227, 0.16), 0 10px 24px -8px rgba(15, 23, 42, 0.08)'
-              : '0 14px 32px -12px rgba(15, 23, 42, 0.11)';
-        }
+              <div className="pt-3.5 mt-3 border-t border-black/[0.06] flex items-center justify-between shrink-0">
+                <span className="text-xs font-medium text-[#6E6E73]">{item.lawRef}</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onSelectModule) onSelectModule(item);
+                  }}
+                  className={`pp-btn inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-4 py-2 rounded-full cursor-pointer ${
+                    isCenter
+                      ? 'bg-[#0071E3] text-white hover:bg-[#0077ED]'
+                      : 'bg-[#F5F5F7] text-[#1D1D1F] hover:bg-black/10'
+                  }`}
+                >
+                  <span>Открыть</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-        cardEl.style.opacity = opacity.toFixed(3);
-        cardEl.style.zIndex = String(zIndex);
-      }
-
-      if (settled) {
-        rafId = 0;
-        return;
-      }
-      rafId = requestAnimationFrame(animate);
-    };
-
-    wakeRef.current = () => {
-      if (!rafId) rafId = requestAnimationFrame(animate);
-    };
-    rafId = requestAnimationFrame(animate);
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      wakeRef.current = () => {};
-    };
-  }, [count, containerWidth]);
-
-  const handlePointerDown = (e) => {
-    if (e.target.closest && e.target.closest('button, input, select, a')) return;
-    const touch = e.touches && e.touches[0];
-    const clientX = touch ? touch.clientX : e.clientX;
-    stateRef.current.isDragging = true;
-    stateRef.current.startX = clientX;
-    stateRef.current.dragStartPos = stateRef.current.currentPos;
-    stateRef.current.movedDistance = 0;
-    wakeRef.current();
-  };
-
-  const handlePointerMove = (e) => {
-    if (!stateRef.current.isDragging) return;
-    const touch = e.touches && e.touches[0];
-    const clientX = touch ? touch.clientX : e.clientX;
-    const dx = clientX - stateRef.current.startX;
-    stateRef.current.movedDistance = Math.abs(dx);
-    const dragStepPx = containerWidth < 640 ? 220 : 280;
-    stateRef.current.currentPos = stateRef.current.dragStartPos - dx / dragStepPx;
-    stateRef.current.targetIndex = stateRef.current.currentPos;
-  };
-
-  const handlePointerUp = () => {
-    if (!stateRef.current.isDragging) return;
-    stateRef.current.isDragging = false;
-    const snapped = Math.round(stateRef.current.currentPos);
-    stateRef.current.targetIndex = snapped;
-    setActiveIndex(((snapped % count) + count) % count);
-    wakeRef.current();
-  };
-
-  const handleCardClick = (idx, item) => {
-    if (stateRef.current.movedDistance > 10) return;
-    if (idx !== activeIndex) {
-      goToIndex(idx);
-      return;
-    }
-    if (onSelectModule) onSelectModule(item);
+      {activeItem && (
+        <div className="mt-5 flex flex-col items-center gap-2 z-20 px-4">
   };
 
   const isMobile = containerWidth < 640;
