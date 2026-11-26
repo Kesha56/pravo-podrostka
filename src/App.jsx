@@ -1935,6 +1935,21 @@ export default function App() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
+  // Установка фирменной иконки-щита (favicon) во вкладке браузера
+  useEffect(() => {
+    const shieldSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 48"><rect width="44" height="48" rx="11" fill="#0071E3"/><path d="M22 6L9 11.3V22.2C9 31.4 14.6 38.7 22 41.2C29.4 38.7 35 31.4 35 22.2V11.3L22 6Z" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linejoin="round"/><path d="M15.5 23.8L20 28.3L29.5 18.5" fill="none" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const dataUri = `data:image/svg+xml,${encodeURIComponent(shieldSvg)}`;
+
+    let link = document.querySelector("link[rel*='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.type = 'image/svg+xml';
+    link.href = dataUri;
+  }, []);
+
   const showToast = useCallback((msg) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -3999,15 +4014,15 @@ export default function App() {
         {activeTab === '404' && (
           <div className="space-y-10 py-4 sm:py-8">
             <section className="text-center">
-              <div className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#0071E3] bg-white/90 border border-black/[0.07] px-4 py-1.5 rounded-full mb-2">
+              <div className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#0071E3] bg-white/90 border border-black/[0.07] px-4 py-1.5 rounded-full mb-3">
                 <span>Ошибка 404</span>
                 <span className="text-black/20">•</span>
                 <span>Статья не найдена</span>
               </div>
               <div className="max-w-4xl mx-auto">
-                <TechText text="404" fontSize={230} />
+                <TechText text="404" fontSize={156} />
               </div>
-              <div className="max-w-xl mx-auto">
+              <div className="max-w-xl mx-auto mt-1">
                 <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-[#1D1D1F] mb-4">
                   Такой статьи в законе нет.
                 </h1>
