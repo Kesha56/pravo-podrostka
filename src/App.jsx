@@ -1904,9 +1904,13 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState(getTabFromHash);
   const [toastMessage, setToastMessage] = useState('');
+  const [secretLogs, setSecretLogs] = useState([]);
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
   const [showChangelog, setShowChangelog] = useState(false);
   const financeSectionRef = useRef(null);
+  const secretTimersRef = useRef([]);
+  const logoClickRef = useRef({ count: 0, timer: null });
+  const secretScenarioIdxRef = useRef(0);
 
   const navigateTo = useCallback((tabId, options = {}) => {
     const nextTab = VALID_TABS.has(tabId) ? tabId : '404';
@@ -1927,6 +1931,78 @@ export default function App() {
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  }, []);
+
+  const SECRET_SCENARIOS = useMemo(
+    () => [
+      [
+        { id: 1, title: 'Обращение сформировано', desc: 'Проверка норм гл. 42 ТК РФ завершена' },
+        { id: 2, title: 'Требуется подпись', desc: 'Согласование законного представителя' },
+        { id: 3, title: 'Пакет документов готов', desc: 'Правовая защита активирована' }
+      ],
+      [
+        { id: 1, title: 'Проверка договора', desc: 'Пункт об испытательном сроке отклонён (ст. 70 ТК)' },
+        { id: 2, title: 'Расчёт смены выполнен', desc: 'График приведён к норме ст. 94 ТК РФ' },
+        { id: 3, title: 'Гарантии подтверждены', desc: 'Условия соответствуют трудовому кодексу' }
+      ],
+      [
+        { id: 1, title: 'Запрос на оплату смен', desc: 'Фиксация фактического допуска по ст. 67 ТК РФ' },
+        { id: 2, title: 'Запрет удержаний', desc: 'Штрафы аннулированы на основании ст. 192 ТК РФ' },
+        { id: 3, title: 'Претензия готова', desc: 'Документ сформирован для вручения' }
+      ],
+      [
+        { id: 1, title: 'Финансовый контроль 14+', desc: 'Право распоряжения доходом по п. 2 ст. 26 ГК РФ' },
+        { id: 2, title: 'Проверка безопасности', desc: 'Ограничения сделок и вкладов учтены' },
+        { id: 3, title: 'Статус: защищено', desc: 'Юридическая памятка активна' }
+      ]
+    ],
+    []
+  );
+
+  const triggerSecretLogoSequence = useCallback(() => {
+    secretTimersRef.current.forEach((id) => clearTimeout(id));
+    secretTimersRef.current = [];
+    setSecretLogs([]);
+
+    const steps = SECRET_SCENARIOS[secretScenarioIdxRef.current % SECRET_SCENARIOS.length];
+    secretScenarioIdxRef.current += 1;
+
+    steps.forEach((step, idx) => {
+      const tId = setTimeout(() => {
+        setSecretLogs((prev) => [...prev, step]);
+      }, idx * 750);
+      secretTimersRef.current.push(tId);
+    });
+
+    const clearId = setTimeout(() => {
+      setSecretLogs([]);
+    }, 5400);
+    secretTimersRef.current.push(clearId);
+  }, [SECRET_SCENARIOS]);
+
+  const handleLogoClick = useCallback(() => {
+    navigateTo('overview');
+
+    const tracker = logoClickRef.current;
+    tracker.count += 1;
+    if (tracker.timer) clearTimeout(tracker.timer);
+
+    if (tracker.count >= 3) {
+      tracker.count = 0;
+      triggerSecretLogoSequence();
+      return;
+    }
+
+    tracker.timer = setTimeout(() => {
+      tracker.count = 0;
+    }, 650);
+  }, [navigateTo, triggerSecretLogoSequence]);
+
+  useEffect(() => {
+    return () => {
+      secretTimersRef.current.forEach((id) => clearTimeout(id));
+      if (logoClickRef.current.timer) clearTimeout(logoClickRef.current.timer);
+    };
   }, []);
 
   useEffect(() => {
@@ -2665,7 +2741,7 @@ export default function App() {
         <div className="w-full px-4 sm:px-8 lg:px-10 h-16 flex items-center justify-between gap-4 overflow-x-auto">
           <button
             type="button"
-            onClick={() => navigateTo('overview')}
+            onClick={handleLogoClick}
             className="brand-logo-btn flex items-center gap-3 text-left shrink-0 cursor-pointer group"
           >
             <BrandLogo />
@@ -3563,7 +3639,7 @@ export default function App() {
                   <select
                     value={docType}
                     onChange={(e) => setDocType(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white text-sm"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white focus:outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/25 transition-colors text-sm"
                   >
                     <option value="consent">
                       Письменное согласие родителя на работу в 14–15 лет (ч. 3 ст. 63 ТК РФ)
@@ -3585,8 +3661,8 @@ export default function App() {
                     type="text"
                     value={docEmployer}
                     onChange={(e) => setDocEmployer(e.target.value)}
-                    placeholder="ООО «Городская кофейня» / ИП Иванов И.И."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white text-sm"
+                    placeholder="ПТУ №35 / ИП Спуркисян А.А."
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white focus:outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/25 transition-colors text-sm"
                   />
                 </div>
 
@@ -3602,10 +3678,10 @@ export default function App() {
                     onChange={(e) => setDocPerson1(e.target.value)}
                     placeholder={
                       docType === 'consent'
-                        ? 'Смирнова Ольга Викторовна'
-                        : 'Смирнов Артем Андреевич'
+                        ? 'Клапонисян Аня Дмитриевна'
+                        : 'Клапонисян Максим Денисович'
                     }
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white text-sm"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white focus:outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/25 transition-colors text-sm"
                   />
                 </div>
 
@@ -3623,12 +3699,12 @@ export default function App() {
                     onChange={(e) => setDocPerson2(e.target.value)}
                     placeholder={
                       docType === 'consent'
-                        ? 'Смирнов Артем Андреевич, 12.04.2011 г.р.'
+                        ? 'Клапонисян Максим Денисович, 12.04.2011 г.р.'
                         : docType === 'internship'
                         ? '4 смены по 4 часа (итого 16 часов)'
                         : 'с 01 июля 2026 года'
                     }
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white text-sm"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white focus:outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/25 transition-colors text-sm"
                   />
                 </div>
 
@@ -3642,7 +3718,7 @@ export default function App() {
                       value={docExtra1}
                       onChange={(e) => setDocExtra1(e.target.value)}
                       placeholder="курьер / бариста"
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white text-sm"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white focus:outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/25 transition-colors text-sm"
                     />
                   </div>
                   <div>
@@ -3653,7 +3729,7 @@ export default function App() {
                       type="date"
                       value={docDate}
                       onChange={(e) => setDocDate(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white text-sm"
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white focus:outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/25 transition-colors text-sm"
                     />
                   </div>
                 </div>
@@ -3781,7 +3857,7 @@ export default function App() {
                 <select
                   value={financeScenario}
                   onChange={(e) => setFinanceScenario(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white text-sm sm:text-base"
+                  className="w-full px-4 py-3 rounded-xl border border-black/10 bg-[#F5F5F7] focus:bg-white focus:outline-none focus:border-[#0071E3] focus:ring-2 focus:ring-[#0071E3]/25 transition-colors text-sm sm:text-base"
                 >
                   <option value="card14">
                     1. Подросток в 14 лет открывает вклад в банке или молодежную карту
@@ -4026,9 +4102,12 @@ export default function App() {
                 <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-[#1D1D1F] mb-4">
                   Такой статьи в законе нет.
                 </h1>
-                <p className="text-[#6E6E73] text-base sm:text-xl mb-8">
+                <p className="text-[#6E6E73] text-base sm:text-xl mb-3">
                   Похоже, эта страница не существует. Вернитесь на главную или проверьте вакансию в
                   калькуляторе.
+                </p>
+                <p className="text-xs sm:text-sm text-[#0071E3] font-medium mb-8">
+                  Зато есть правило 34-й статьи... ой, то есть 63-й статьи Трудового кодекса РФ!
                 </p>
                 <button
                   type="button"
@@ -4215,6 +4294,26 @@ export default function App() {
         </div>
       )}
 
+      {/* СКРЫТАЯ ПАНЕЛЬ УВЕДОМЛЕНИЙ СЛЕВА ПРИ ДВОЙНОМ КЛИКЕ ПО ЛОГОТИПУ */}
+      {secretLogs.length > 0 && (
+        <div className="fixed bottom-5 left-5 z-50 flex flex-col gap-2.5 max-w-[300px] sm:max-w-[330px]">
+          {secretLogs.map((item) => (
+            <div
+              key={item.id}
+              className="bg-white/95 backdrop-blur-2xl border border-[#0071E3]/25 rounded-2xl px-4 py-3 shadow-[0_12px_28px_-10px_rgba(0,113,227,0.28)] flex items-start gap-3 transition-all"
+            >
+              <span className="w-7 h-7 rounded-xl bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center shrink-0 mt-0.5">
+                <ShieldCheck className="w-4 h-4" />
+              </span>
+              <div className="text-xs sm:text-sm leading-snug">
+                <div className="font-semibold text-[#1D1D1F]">{item.title}</div>
+                <div className="text-xs text-[#6E6E73] mt-0.5">{item.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* ПОДВАЛ САЙТА */}
       <footer className="relative z-10 bg-[#F5F5F7]/95 backdrop-blur-xl border-t border-black/[0.08] text-[#6E6E73]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
@@ -4222,7 +4321,7 @@ export default function App() {
             <div className="md:col-span-5 space-y-3">
               <button
                 type="button"
-                onClick={() => navigateTo('overview')}
+                onClick={handleLogoClick}
                 className="brand-logo-btn text-left cursor-pointer group"
               >
                 <BrandLogo compact />
