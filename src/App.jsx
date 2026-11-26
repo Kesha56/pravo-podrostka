@@ -38,17 +38,17 @@ const GLOBAL_STYLES = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
   html {
-    font-size: 14.5px;
+    font-size: 15.5px;
     -webkit-text-size-adjust: 100%;
   }
-  @media (min-width: 1280px) {
+  @media (min-width: 1024px) {
     html {
-      font-size: 15px;
+      font-size: 16.5px;
     }
   }
-  @media (min-width: 1600px) {
+  @media (min-width: 1440px) {
     html {
-      font-size: 15.5px;
+      font-size: 17.5px;
     }
   }
 
@@ -610,7 +610,7 @@ function GradientASCII({
 function TechText({
   text = 'ПРАВО 14–17',
   fontWeight = 700,
-  fontSize = 142,
+  fontSize = 168,
   dashLength = 5,
   dashGap = 2.5,
   specks = 15,
@@ -985,7 +985,7 @@ function TechText({
   return (
     <div
       ref={containerRef}
-      className="w-full h-[110px] sm:h-[140px] lg:h-[164px] relative select-none cursor-grab active:cursor-grabbing"
+      className="w-full h-[120px] sm:h-[155px] lg:h-[182px] relative select-none cursor-grab active:cursor-grabbing"
     >
       <canvas ref={canvasRef} className="block w-full h-full" />
     </div>
@@ -1080,8 +1080,108 @@ function FlexCarousel({ items = [], onSelectModule }) {
       if (settled) s.currentPos = s.targetIndex;
 
       const isMobile = containerWidth < 640;
-  const cardHeightPx = isMobile ? 378 : 386;
-  const cardWidthPx = isMobile ? Math.min(290, containerWidth - 40) : 340;
+      const baseCardW = isMobile ? Math.min(310, containerWidth - 36) : 372;
+      const spacingBase = baseCardW * 0.82 + 16;
+
+      for (let i = 0; i < count; i++) {
+        const cardEl = cardRefs.current[i];
+        if (!cardEl) continue;
+
+        let delta = i - s.currentPos;
+        while (delta > count / 2) delta -= count;
+        while (delta < -count / 2) delta += count;
+
+        const absD = Math.abs(delta);
+        const sign = delta === 0 ? 0 : delta > 0 ? 1 : -1;
+
+        if (settled && absD < 0.001) {
+          cardEl.style.transform = 'none';
+          cardEl.style.opacity = '1';
+          cardEl.style.zIndex = '60';
+          cardEl.style.boxShadow =
+            '0 22px 46px -14px rgba(0, 113, 227, 0.22), 0 10px 24px -10px rgba(15, 23, 42, 0.1)';
+          continue;
+        }
+
+        const scaleVal = Math.max(0.76, 1 - absD * 0.11);
+        const tx = Math.round(delta * spacingBase);
+        const ty = Math.round(Math.pow(absD, 1.55) * 14);
+        const tz = Math.round(-Math.pow(absD, 1.35) * 140);
+        const rotY = -sign * Math.min(34, absD * 20);
+        const opacity = Math.max(0.28, 1 - Math.max(0, absD - 1.15) * 0.5);
+        const zIndex = Math.round(50 - absD * 10);
+
+        cardEl.style.transform = `translate3d(${tx}px, ${ty}px, ${tz}px) rotateY(${rotY.toFixed(
+          2
+        )}deg) scale(${scaleVal.toFixed(3)})`;
+        cardEl.style.opacity = opacity.toFixed(3);
+        cardEl.style.zIndex = String(zIndex);
+        cardEl.style.boxShadow = '0 14px 32px -12px rgba(15, 23, 42, 0.12)';
+      }
+
+      if (settled) {
+        rafId = 0;
+        return;
+      }
+
+      rafId = requestAnimationFrame(animate);
+    };
+
+    wakeRef.current = () => {
+      if (!rafId) rafId = requestAnimationFrame(animate);
+    };
+
+    rafId = requestAnimationFrame(animate);
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+      wakeRef.current = () => {};
+    };
+  }, [count, containerWidth]);
+
+  const handlePointerDown = (e) => {
+    if (e.target && e.target.closest && e.target.closest('button, input, select, a')) return;
+    const touch = e.touches && e.touches[0];
+    const clientX = touch ? touch.clientX : e.clientX;
+    stateRef.current.isDragging = true;
+    stateRef.current.startX = clientX;
+    stateRef.current.dragStartPos = stateRef.current.currentPos;
+    stateRef.current.movedDistance = 0;
+    wakeRef.current();
+  };
+
+  const handlePointerMove = (e) => {
+    if (!stateRef.current.isDragging) return;
+    const touch = e.touches && e.touches[0];
+    const clientX = touch ? touch.clientX : e.clientX;
+    const dx = clientX - stateRef.current.startX;
+    stateRef.current.movedDistance = Math.abs(dx);
+    const dragStepPx = containerWidth < 640 ? 220 : 280;
+    stateRef.current.currentPos = stateRef.current.dragStartPos - dx / dragStepPx;
+    stateRef.current.targetIndex = stateRef.current.currentPos;
+  };
+
+  const handlePointerUp = () => {
+    if (!stateRef.current.isDragging) return;
+    stateRef.current.isDragging = false;
+    const snapped = Math.round(stateRef.current.currentPos);
+    stateRef.current.targetIndex = snapped;
+    const norm = ((snapped % count) + count) % count;
+    setActiveIndex(norm);
+    wakeRef.current();
+  };
+
+  const handleCardClick = (idx, item) => {
+    if (stateRef.current.movedDistance > 10) return;
+    if (idx !== activeIndex) {
+      goToIndex(idx);
+      return;
+    }
+    if (onSelectModule) onSelectModule(item);
+  };
+
+  const isMobile = containerWidth < 640;
+  const cardHeightPx = isMobile ? 424 : 444;
+  const cardWidthPx = isMobile ? Math.min(310, containerWidth - 36) : 372;
   const activeItem = items[activeIndex] || items[0];
 
   return (
@@ -1094,10 +1194,10 @@ function FlexCarousel({ items = [], onSelectModule }) {
       onTouchStart={handlePointerDown}
       onTouchMove={handlePointerMove}
       onTouchEnd={handlePointerUp}
-      className="w-full relative select-none overflow-hidden flex flex-col items-center justify-center py-4 cursor-grab active:cursor-grabbing"
+      className="w-full relative select-none overflow-hidden flex flex-col items-center justify-center py-5 cursor-grab active:cursor-grabbing"
     >
       <div
-        style={{ height: `${cardHeightPx + 24}px`, perspective: '1300px' }}
+        style={{ height: `${cardHeightPx + 34}px`, perspective: '1300px' }}
         className="w-full relative flex items-center justify-center"
       >
         {items.map((item, idx) => {
@@ -1113,15 +1213,15 @@ function FlexCarousel({ items = [], onSelectModule }) {
               style={{
                 width: `${cardWidthPx}px`,
                 height: `${cardHeightPx}px`,
-                borderRadius: '24px',
+                borderRadius: '26px',
                 backfaceVisibility: 'hidden',
                 WebkitFontSmoothing: 'antialiased'
               }}
-              className={`absolute bg-white border p-5 sm:p-6 overflow-hidden flex flex-col justify-between cursor-pointer transition-colors ${
+              className={`absolute bg-white border p-6 sm:p-7 overflow-hidden flex flex-col justify-between cursor-pointer transition-colors ${
                 isCenter ? 'border-[#0071E3]/25' : 'border-black/[0.08]'
               }`}
             >
-              <div>
+              <div className="min-h-0">
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="inline-flex items-center gap-2">
                     <span className="w-7 h-7 rounded-xl bg-[#0071E3]/[0.1] text-[#0071E3] flex items-center justify-center shrink-0">
@@ -1138,7 +1238,9 @@ function FlexCarousel({ items = [], onSelectModule }) {
                   {item.title}
                 </h3>
 
-                <p className="text-xs sm:text-sm text-[#6E6E73] leading-relaxed mb-3">{item.description}</p>
+                <p className="text-xs sm:text-sm text-[#6E6E73] leading-relaxed mb-3">
+                  {item.description}
+                </p>
 
                 <ul className="space-y-1.5 text-xs sm:text-sm text-[#1D1D1F]/85">
                   {item.highlights.map((hl, hIdx) => (
@@ -1150,15 +1252,15 @@ function FlexCarousel({ items = [], onSelectModule }) {
                 </ul>
               </div>
 
-              <div className="pt-3.5 mt-3 border-t border-black/[0.06] flex items-center justify-between shrink-0">
-                <span className="text-xs font-medium text-[#6E6E73]">{item.lawRef}</span>
+              <div className="pt-3.5 mt-3 border-t border-black/[0.06] flex items-center justify-between gap-2 shrink-0">
+                <span className="text-xs font-medium text-[#6E6E73] truncate">{item.lawRef}</span>
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     if (onSelectModule) onSelectModule(item);
                   }}
-                  className={`pp-btn inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-4 py-2 rounded-full cursor-pointer ${
+                  className={`pp-btn inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-4 py-2 rounded-full cursor-pointer shrink-0 ${
                     isCenter
                       ? 'bg-[#0071E3] text-white hover:bg-[#0077ED]'
                       : 'bg-[#F5F5F7] text-[#1D1D1F] hover:bg-black/10'
@@ -1174,106 +1276,7 @@ function FlexCarousel({ items = [], onSelectModule }) {
       </div>
 
       {activeItem && (
-        <div className="mt-5 flex flex-col items-center gap-2 z-20 px-4">
-  };
-
-  const isMobile = containerWidth < 640;
-  const cardHeightPx = isMobile ? 320 : 328;
-  const cardWidthPx = isMobile ? Math.min(280, containerWidth - 44) : 335;
-  const activeItem = items[activeIndex] || items[0];
-
-  return (
-    <div
-      ref={wrapperRef}
-      onMouseDown={handlePointerDown}
-      onMouseMove={handlePointerMove}
-      onMouseUp={handlePointerUp}
-      onMouseLeave={handlePointerUp}
-      onTouchStart={handlePointerDown}
-      onTouchMove={handlePointerMove}
-      onTouchEnd={handlePointerUp}
-      style={{ height: `${cardHeightPx + 84}px` }}
-      className="w-full relative select-none overflow-hidden flex flex-col items-center justify-center cursor-grab active:cursor-grabbing"
-    >
-      <div
-        style={{ height: `${cardHeightPx}px`, perspective: '1300px' }}
-        className="w-full relative flex items-center justify-center"
-      >
-        {items.map((item, idx) => {
-          const IconComponent = item.icon || Shield;
-          const isCenter = idx === activeIndex;
-          return (
-            <div
-              key={item.id || idx}
-              ref={(el) => {
-                cardRefs.current[idx] = el;
-              }}
-              onClick={() => handleCardClick(idx, item)}
-              style={{
-                width: `${cardWidthPx}px`,
-                height: `${cardHeightPx - 12}px`,
-                borderRadius: '24px',
-                backfaceVisibility: 'hidden',
-                WebkitFontSmoothing: 'antialiased'
-              }}
-              className={`absolute bg-white border p-5 sm:p-6 flex flex-col justify-between cursor-pointer transition-colors ${
-                isCenter ? 'border-[#0071E3]/25' : 'border-black/[0.08]'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between gap-2 mb-3.5">
-                  <div className="inline-flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-xl bg-[#0071E3]/[0.1] text-[#0071E3] flex items-center justify-center shrink-0">
-                      <IconComponent className="w-3.5 h-3.5" />
-                    </span>
-                    <span className="text-xs font-semibold text-[#0071E3]">{item.badge}</span>
-                  </div>
-                  <span className="text-xs font-mono font-semibold text-[#86868B]">
-                    0{idx + 1} / 0{count}
-                  </span>
-                </div>
-
-                <h3 className="text-lg sm:text-xl font-semibold tracking-tight text-[#1D1D1F] leading-snug mb-2">
-                  {item.title}
-                </h3>
-
-                <p className="text-xs sm:text-sm text-[#6E6E73] leading-relaxed mb-3.5">{item.description}</p>
-
-                <ul className="space-y-1.5 text-xs sm:text-sm text-[#1D1D1F]/85">
-                  {item.highlights.map((hl, hIdx) => (
-                    <li key={hIdx} className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#0071E3] shrink-0" />
-                      <span>{hl}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="pt-4 border-t border-black/[0.06] flex items-center justify-between">
-                <span className="text-xs font-medium text-[#6E6E73]">{item.lawRef}</span>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (onSelectModule) onSelectModule(item);
-                  }}
-                  className={`pp-btn inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-4 py-2 rounded-full cursor-pointer ${
-                    isCenter
-                      ? 'bg-[#0071E3] text-white hover:bg-[#0077ED]'
-                      : 'bg-[#F5F5F7] text-[#1D1D1F] hover:bg-black/10'
-                  }`}
-                >
-                  <span>Открыть</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {activeItem && (
-        <div className="mt-4 flex flex-col items-center gap-2 z-20 px-4">
+        <div className="mt-6 flex flex-col items-center gap-2 z-20 px-4">
           <div className="flex items-center gap-3 bg-white border border-black/[0.08] px-3 py-1.5 rounded-full shadow-sm">
             <button
               type="button"
@@ -2644,7 +2647,7 @@ export default function App() {
 
       {/* ШАПКА В СТИЛЕ APPLE */}
       <header className="w-full bg-[#F5F5F7]/80 backdrop-blur-xl border-b border-black/[0.06] sticky top-0 z-40">
-        <div className="w-full px-4 sm:px-8 lg:px-10 h-14 flex items-center justify-between gap-4 overflow-x-auto">
+        <div className="w-full px-4 sm:px-8 lg:px-10 h-16 flex items-center justify-between gap-4 overflow-x-auto">
           <button
             type="button"
             onClick={() => navigateTo('overview')}
@@ -2681,12 +2684,12 @@ export default function App() {
       </header>
 
       {/* ОСНОВНОЙ КОНТЕНТ */}
-      <main className="relative z-10 flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+      <main className="relative z-10 flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-5 sm:py-8">
         {/* ВКЛАДКА 1: ОБЗОР */}
         {activeTab === 'overview' && (
-          <div className="space-y-8">
+          <div className="space-y-10">
             {/* ГЛАВНЫЙ ЭКРАН APPLE HERO */}
-            <section className="relative py-1 sm:py-2 text-center">
+            <section className="relative py-1 sm:py-3 text-center">
               <div
                 className="pointer-events-none absolute inset-0 -z-10"
                 style={{
@@ -2695,32 +2698,32 @@ export default function App() {
                 }}
               />
 
-              <div className="max-w-4xl mx-auto">
+              <div className="max-w-5xl mx-auto">
                 <TechText text="ПРАВО 14–17" />
               </div>
 
-              <div className="max-w-2xl mx-auto mt-0.5 px-2">
-                <div className="inline-flex items-center gap-2 text-xs font-semibold text-[#0071E3] bg-white/85 backdrop-blur-md border border-black/[0.07] px-3.5 py-1 rounded-full mb-3 shadow-sm">
+              <div className="max-w-3xl mx-auto mt-1 px-2">
+                <div className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#0071E3] bg-white/85 backdrop-blur-md border border-black/[0.07] px-4 py-1.5 rounded-full mb-3.5 shadow-sm">
                   <span>Глава 42 ТК РФ</span>
                   <span className="text-black/20">•</span>
                   <span>Статья 26 ГК РФ</span>
                 </div>
 
-                <h1 className="text-2xl sm:text-3xl lg:text-[40px] font-bold tracking-[-0.03em] text-[#1D1D1F] leading-[1.1] mb-3">
+                <h1 className="text-3xl sm:text-4xl lg:text-[46px] font-bold tracking-[-0.03em] text-[#1D1D1F] leading-[1.1] mb-3.5">
                   Трудовые и гражданские права подростков понятным языком.
                 </h1>
 
-                <p className="text-[#6E6E73] text-sm sm:text-base lg:text-[16.5px] font-normal leading-relaxed mb-5 max-w-xl mx-auto">
+                <p className="text-[#6E6E73] text-base sm:text-lg lg:text-[18px] font-normal leading-relaxed mb-6 max-w-2xl mx-auto">
                   Проверьте законность графика первой подработки за одну минуту, соберите готовое
                   согласие родителей или заявление работодателю и разберитесь с банковскими картами
                   с 14 лет.
                 </p>
 
-                <div className="flex flex-wrap items-center justify-center gap-3">
+                <div className="flex flex-wrap items-center justify-center gap-3.5">
                   <button
                     type="button"
                     onClick={() => navigateTo('calculator')}
-                    className="pp-btn inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white font-semibold px-6 py-2.5 rounded-full text-sm shadow-sm cursor-pointer"
+                    className="pp-btn inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white font-semibold px-7 py-3 rounded-full text-sm sm:text-base shadow-sm cursor-pointer"
                   >
                     <span>Проверить вакансию</span>
                     <ArrowRight className="w-4 h-4" />
@@ -2728,23 +2731,23 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => navigateTo('documents')}
-                    className="pp-btn inline-flex items-center gap-2 bg-white/95 hover:bg-white text-[#1D1D1F] border border-black/[0.08] font-semibold px-6 py-2.5 rounded-full text-sm shadow-sm cursor-pointer"
+                    className="pp-btn inline-flex items-center gap-2 bg-white/95 hover:bg-white text-[#1D1D1F] border border-black/[0.08] font-semibold px-7 py-3 rounded-full text-sm sm:text-base shadow-sm cursor-pointer"
                   >
                     <span>Собрать документ</span>
                   </button>
                 </div>
 
-                <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5 text-xs text-[#6E6E73] font-medium">
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs sm:text-sm text-[#6E6E73] font-medium">
                   <span className="inline-flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0071E3] shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-[#0071E3] shrink-0" />
                     Без испытательного срока (ст. 70 ТК РФ)
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0071E3] shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-[#0071E3] shrink-0" />
                     Сокращенная смена (ст. 92, 94 ТК РФ)
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0071E3] shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-[#0071E3] shrink-0" />
                     Своя карта и вклад с 14 лет (ст. 26 ГК РФ)
                   </span>
                 </div>
@@ -2931,7 +2934,14 @@ export default function App() {
                   />
 
                   <circle cx="160" cy="42" r="19" fill="#0071E3" />
-                  <text x="160" y="47" textAnchor="middle" fill="#FFFFFF" fontSize="14" fontWeight="bold">
+                  <text
+                    x="160"
+                    y="47"
+                    textAnchor="middle"
+                    fill="#FFFFFF"
+                    fontSize="14"
+                    fontWeight="bold"
+                  >
                     14
                   </text>
                   <rect x="30" y="74" width="260" height="98" rx="16" fill="#F5F5F7" />
@@ -2949,7 +2959,14 @@ export default function App() {
                   </text>
 
                   <circle cx="490" cy="42" r="19" fill="#0071E3" />
-                  <text x="490" y="47" textAnchor="middle" fill="#FFFFFF" fontSize="14" fontWeight="bold">
+                  <text
+                    x="490"
+                    y="47"
+                    textAnchor="middle"
+                    fill="#FFFFFF"
+                    fontSize="14"
+                    fontWeight="bold"
+                  >
                     16
                   </text>
                   <rect x="360" y="74" width="260" height="98" rx="16" fill="#F5F5F7" />
@@ -2966,8 +2983,22 @@ export default function App() {
                     • До 4 ч/день в учебу, до 7 ч в каникулы
                   </text>
 
-                  <circle cx="820" cy="42" r="19" fill="#FFFFFF" stroke="#0071E3" strokeWidth="3" />
-                  <text x="820" y="47" textAnchor="middle" fill="#0071E3" fontSize="14" fontWeight="bold">
+                  <circle
+                    cx="820"
+                    cy="42"
+                    r="19"
+                    fill="#FFFFFF"
+                    stroke="#0071E3"
+                    strokeWidth="3"
+                  />
+                  <text
+                    x="820"
+                    y="47"
+                    textAnchor="middle"
+                    fill="#0071E3"
+                    fontSize="14"
+                    fontWeight="bold"
+                  >
                     18
                   </text>
                   <rect x="690" y="74" width="260" height="98" rx="16" fill="#F5F5F7" />
@@ -3348,13 +3379,28 @@ export default function App() {
                       5. Дополнительные условия работодателя:
                     </div>
                     {[
-                      [hasProbation, setHasProbation, 'Устанавливают испытательный срок или бесплатную стажировку'],
-                      [hasNight, setHasNight, 'Есть ночные смены (с 22:00 до 06:00) или сверхурочные'],
+                      [
+                        hasProbation,
+                        setHasProbation,
+                        'Устанавливают испытательный срок или бесплатную стажировку'
+                      ],
+                      [
+                        hasNight,
+                        setHasNight,
+                        'Есть ночные смены (с 22:00 до 06:00) или сверхурочные'
+                      ],
                       [hasFine, setHasFine, 'Есть денежные штрафы за опоздания или бой посуды'],
                       [hasMed, setHasMed, 'Просят оплатить предварительный медосмотр за свой счет'],
-                      [hasHeavy, setHasHeavy, 'Постоянный подъем тяжестей или продажа спиртного / табака']
+                      [
+                        hasHeavy,
+                        setHasHeavy,
+                        'Постоянный подъем тяжестей или продажа спиртного / табака'
+                      ]
                     ].map(([val, setter, label], idx) => (
-                      <label key={idx} className="flex items-start gap-2.5 text-sm text-[#1D1D1F] cursor-pointer">
+                      <label
+                        key={idx}
+                        className="flex items-start gap-2.5 text-sm text-[#1D1D1F] cursor-pointer"
+                      >
                         <input
                           type="checkbox"
                           checked={val}
@@ -3433,11 +3479,21 @@ export default function App() {
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="bg-[#F5F5F7] text-left text-[#1D1D1F]">
-                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">Возраст</th>
-                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">В день (учеба)</th>
-                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">В неделю (учеба)</th>
-                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">В день (каникулы)</th>
-                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">В неделю (каникулы)</th>
+                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">
+                        Возраст
+                      </th>
+                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">
+                        В день (учеба)
+                      </th>
+                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">
+                        В неделю (учеба)
+                      </th>
+                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">
+                        В день (каникулы)
+                      </th>
+                      <th className="px-4 py-3 font-semibold border-b border-black/[0.07]">
+                        В неделю (каникулы)
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-black/[0.06]">
@@ -3820,21 +3876,27 @@ export default function App() {
                   <Lock className="w-5 h-5 text-[#0071E3] shrink-0 mt-0.5" />
                   <div className="text-xs sm:text-sm">
                     <div className="font-semibold text-[#1D1D1F]">Без регистрации</div>
-                    <div className="text-[#6E6E73] mt-0.5">Не запрашиваем ФИО, телефон или паспорт</div>
+                    <div className="text-[#6E6E73] mt-0.5">
+                      Не запрашиваем ФИО, телефон или паспорт
+                    </div>
                   </div>
                 </div>
                 <div className="rounded-2xl bg-[#F5F5F7] p-4 flex items-start gap-3">
                   <Smartphone className="w-5 h-5 text-[#0071E3] shrink-0 mt-0.5" />
                   <div className="text-xs sm:text-sm">
                     <div className="font-semibold text-[#1D1D1F]">Локальная работа</div>
-                    <div className="text-[#6E6E73] mt-0.5">Расчеты и документы создаются в браузере</div>
+                    <div className="text-[#6E6E73] mt-0.5">
+                      Расчеты и документы создаются в браузере
+                    </div>
                   </div>
                 </div>
                 <div className="rounded-2xl bg-[#F5F5F7] p-4 flex items-start gap-3">
                   <Shield className="w-5 h-5 text-[#0071E3] shrink-0 mt-0.5" />
                   <div className="text-xs sm:text-sm">
                     <div className="font-semibold text-[#1D1D1F]">Без рекламных трекеров</div>
-                    <div className="text-[#6E6E73] mt-0.5">Не передаем сведения третьим лицам</div>
+                    <div className="text-[#6E6E73] mt-0.5">
+                      Не передаем сведения третьим лицам
+                    </div>
                   </div>
                 </div>
               </div>
@@ -4140,7 +4202,7 @@ export default function App() {
 
       {/* ПОДВАЛ САЙТА */}
       <footer className="relative z-10 bg-[#F5F5F7]/95 backdrop-blur-xl border-t border-black/[0.08] text-[#6E6E73]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pb-10 border-b border-black/[0.07]">
             <div className="md:col-span-5 space-y-3">
               <button
