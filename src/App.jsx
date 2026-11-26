@@ -41,6 +41,16 @@ const GLOBAL_STYLES = `
     font-size: 16px;
     -webkit-text-size-adjust: 100%;
   }
+  @media (min-width: 1024px) {
+    html {
+      font-size: 18.5px;
+    }
+  }
+  @media (min-width: 1440px) {
+    html {
+      font-size: 20px;
+    }
+  }
 
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -600,7 +610,7 @@ function GradientASCII({
 function TechText({
   text = 'ПРАВО 14–17',
   fontWeight = 700,
-  fontSize = 215,
+  fontSize = 265,
   dashLength = 5,
   dashGap = 2.5,
   specks = 15,
@@ -653,8 +663,8 @@ function TechText({
       canvas.height = Math.floor(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const charFactor = Math.max(3.1, text.length * 0.58);
-      const responsiveSize = Math.min(fontSize, Math.max(38, Math.floor(width / charFactor)));
+      const charFactor = Math.max(2.9, text.length * 0.54);
+      const responsiveSize = Math.min(fontSize, Math.max(40, Math.floor(width / charFactor)));
       ctx.font = `${fontWeight} ${responsiveSize}px ${canvasFontFamily}`;
 
       const chars = Array.from(text);
@@ -959,7 +969,7 @@ function TechText({
   return (
     <div
       ref={containerRef}
-      className="w-full h-[185px] sm:h-[245px] lg:h-[285px] relative select-none cursor-grab active:cursor-grabbing"
+      className="w-full h-[210px] sm:h-[270px] lg:h-[330px] relative select-none cursor-grab active:cursor-grabbing"
     >
       <canvas ref={canvasRef} className="block w-full h-full" />
     </div>
@@ -1054,8 +1064,8 @@ function FlexCarousel({ items = [], onSelectModule }) {
       if (settled) s.currentPos = s.targetIndex;
 
       const isMobile = containerWidth < 640;
-      const baseCardW = isMobile ? Math.min(296, containerWidth - 48) : 356;
-      const spacingBase = baseCardW * 0.8 + 14;
+      const baseCardW = isMobile ? Math.min(300, containerWidth - 44) : 410;
+      const spacingBase = baseCardW * 0.8 + 16;
 
       for (let i = 0; i < count; i++) {
         const cardEl = cardRefs.current[i];
@@ -1152,8 +1162,8 @@ function FlexCarousel({ items = [], onSelectModule }) {
   };
 
   const isMobile = containerWidth < 640;
-  const cardHeightPx = isMobile ? 356 : 344;
-  const cardWidthPx = isMobile ? Math.min(296, containerWidth - 48) : 356;
+  const cardHeightPx = isMobile ? 364 : 384;
+  const cardWidthPx = isMobile ? Math.min(300, containerWidth - 44) : 410;
   const activeItem = items[activeIndex] || items[0];
 
   return (
@@ -2655,7 +2665,7 @@ export default function App() {
       </header>
 
       {/* ОСНОВНОЙ КОНТЕНТ */}
-      <main className="relative z-10 flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <main className="relative z-10 flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* ВКЛАДКА 1: ОБЗОР */}
         {activeTab === 'overview' && (
           <div className="space-y-12">
@@ -2669,7 +2679,7 @@ export default function App() {
                 }}
               />
 
-              <div className="max-w-5xl mx-auto">
+              <div className="max-w-6xl mx-auto">
                 <TechText text="ПРАВО 14–17" />
               </div>
 
@@ -2680,7 +2690,7 @@ export default function App() {
                   <span>Статья 26 ГК РФ</span>
                 </div>
 
-                <h1 className="text-4xl sm:text-5xl lg:text-[62px] font-bold tracking-[-0.03em] text-[#1D1D1F] leading-[1.08] mb-5">
+                <h1 className="text-4xl sm:text-5xl lg:text-[68px] font-bold tracking-[-0.03em] text-[#1D1D1F] leading-[1.06] mb-5">
                   Трудовые и гражданские права подростков понятным языком.
                 </h1>
 
@@ -4114,7 +4124,7 @@ export default function App() {
 
       {/* ПОДВАЛ САЙТА */}
       <footer className="relative z-10 bg-[#F5F5F7]/95 backdrop-blur-xl border-t border-black/[0.08] text-[#6E6E73]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 pb-10 border-b border-black/[0.07]">
             <div className="md:col-span-5 space-y-3">
               <button
