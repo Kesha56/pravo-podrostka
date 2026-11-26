@@ -35,6 +35,19 @@ import {
 } from 'lucide-react';
 
 const GLOBAL_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   /* Пружинная анимация кнопок в стиле Apple / Reachable */
   .pp-btn {
     position: relative;
@@ -587,7 +600,7 @@ function GradientASCII({
 function TechText({
   text = 'ПРАВО 14–17',
   fontWeight = 700,
-  fontSize = 195,
+  fontSize = 215,
   dashLength = 5,
   dashGap = 2.5,
   specks = 15,
@@ -627,8 +640,12 @@ function TechText({
     let sweepProgress = -0.3;
     let animId = 0;
     let isInViewport = true;
+    let isMounted = true;
+
+    const canvasFontFamily = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
 
     const buildLayout = () => {
+      if (!isMounted) return;
       width = Math.max(240, container.clientWidth || 960);
       height = Math.max(120, container.clientHeight || 280);
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -636,9 +653,9 @@ function TechText({
       canvas.height = Math.floor(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const charFactor = Math.max(3.4, text.length * 0.65);
-      const responsiveSize = Math.min(fontSize, Math.max(36, Math.floor(width / charFactor)));
-      ctx.font = `${fontWeight} ${responsiveSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+      const charFactor = Math.max(3.1, text.length * 0.58);
+      const responsiveSize = Math.min(fontSize, Math.max(38, Math.floor(width / charFactor)));
+      ctx.font = `${fontWeight} ${responsiveSize}px ${canvasFontFamily}`;
 
       const chars = Array.from(text);
       const spacingPx = responsiveSize * letterSpacing;
@@ -682,6 +699,11 @@ function TechText({
     };
 
     buildLayout();
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => {
+        if (isMounted) buildLayout();
+      });
+    }
     window.addEventListener('resize', buildLayout);
 
     const getLocalCoords = (e) => {
@@ -828,7 +850,7 @@ function TechText({
         ctx.translate(l.x, l.y);
         ctx.rotate(l.angle);
 
-        ctx.font = `${fontWeight} ${l.fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+        ctx.font = `${fontWeight} ${l.fontSize}px ${canvasFontFamily}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'alphabetic';
 
@@ -900,6 +922,7 @@ function TechText({
     animId = requestAnimationFrame(animate);
 
     return () => {
+      isMounted = false;
       if (animId) cancelAnimationFrame(animId);
       if (observer) observer.disconnect();
       window.removeEventListener('resize', buildLayout);
@@ -936,7 +959,7 @@ function TechText({
   return (
     <div
       ref={containerRef}
-      className="w-full h-[175px] sm:h-[235px] lg:h-[270px] relative select-none cursor-grab active:cursor-grabbing"
+      className="w-full h-[185px] sm:h-[245px] lg:h-[285px] relative select-none cursor-grab active:cursor-grabbing"
     >
       <canvas ref={canvasRef} className="block w-full h-full" />
     </div>
@@ -2583,7 +2606,9 @@ export default function App() {
 
   return (
     <div
-      style={{ fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}
+      style={{
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+      }}
       className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] flex flex-col relative antialiased"
     >
       <style>{GLOBAL_STYLES}</style>
@@ -2655,21 +2680,21 @@ export default function App() {
                   <span>Статья 26 ГК РФ</span>
                 </div>
 
-                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-[#1D1D1F] leading-[1.1] mb-5">
+                <h1 className="text-4xl sm:text-5xl lg:text-[62px] font-bold tracking-[-0.03em] text-[#1D1D1F] leading-[1.08] mb-5">
                   Трудовые и гражданские права подростков понятным языком.
                 </h1>
 
-                <p className="text-[#6E6E73] text-lg sm:text-xl lg:text-2xl font-normal leading-relaxed mb-8 max-w-3xl mx-auto">
+                <p className="text-[#6E6E73] text-lg sm:text-xl lg:text-[22px] font-normal leading-relaxed mb-9 max-w-3xl mx-auto">
                   Проверьте законность графика первой подработки за одну минуту, соберите готовое
                   согласие родителей или заявление работодателю и разберитесь с банковскими картами
                   с 14 лет.
                 </p>
 
-                <div className="flex flex-wrap items-center justify-center gap-3.5">
+                <div className="flex flex-wrap items-center justify-center gap-4">
                   <button
                     type="button"
                     onClick={() => navigateTo('calculator')}
-                    className="pp-btn inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white font-medium px-7 py-3.5 rounded-full text-base sm:text-lg shadow-sm cursor-pointer"
+                    className="pp-btn inline-flex items-center gap-2 bg-[#0071E3] hover:bg-[#0077ED] text-white font-semibold px-8 py-4 rounded-full text-base sm:text-lg shadow-sm cursor-pointer"
                   >
                     <span>Проверить вакансию</span>
                     <ArrowRight className="w-5 h-5" />
@@ -2677,7 +2702,7 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => navigateTo('documents')}
-                    className="pp-btn inline-flex items-center gap-2 bg-white/95 hover:bg-white text-[#1D1D1F] border border-black/[0.08] font-medium px-7 py-3.5 rounded-full text-base sm:text-lg shadow-sm cursor-pointer"
+                    className="pp-btn inline-flex items-center gap-2 bg-white/95 hover:bg-white text-[#1D1D1F] border border-black/[0.08] font-semibold px-8 py-4 rounded-full text-base sm:text-lg shadow-sm cursor-pointer"
                   >
                     <span>Собрать документ</span>
                   </button>
